@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 
-# =============================================================================
-# Personal Command Line Tool
-# =============================================================================
-
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
-version="0.8"
+small_desc="Personal CLI Tool"
+version="0.9"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -91,7 +88,7 @@ show_banner() {
 # ── Help ────────────────────────────────────────────────────────────────────
 show_help() {
     cat << EOF
-${script_name} v${version} - Oooga Booga Bugaa
+${script_name} - ${small_desc}
 
 Usage: ${script_name} <command>
 
