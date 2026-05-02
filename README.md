@@ -9,7 +9,7 @@ A flexible installer for turning any script into a system-wide command.
 - Install **`command/jarvis`** as a global command
 
 ```shell
-jarvis v0.4 - Oooga Booga Bugaa
+jarvis v0.5 - Oooga Booga Bugaa
 
 Usage: jarvis <command>
 
