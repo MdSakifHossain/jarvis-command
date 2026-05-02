@@ -66,7 +66,7 @@ Available commands:
 
 Examples:
     ${script_name} attendance-sheet
-    ${script_name} lights <on|off|1|0>
+    ${script_name} <lt|light|lights|ram|rams> <on|off|1|0>
     ${script_name} version
     ${script_name} help
 EOF
@@ -81,23 +81,23 @@ case "$1" in
         echo "This month's attendance sheet has been created."
         ;;
 
-    lights)
+    lt|lts|light|lights|ram|rams)
         # openrgb --mode off;
 
         case "$2" in
             on|1)
-                echo "Turning lights ON..."
+                echo "[INFO] Turning lights ON..."
                 openrgb --color FFFFFF
                 ;;
 
             off|0)
-                echo "Turning lights OFF..."
+                echo "[INFO] Turning lights OFF..."
                 openrgb --mode off
                 ;;
 
             *)
-                echo "Error: Unknown lights command."
-                echo "Usage: jarvis lights <on|off|1|0>"
+                echo "[Error]: Unknown lights command."
+                echo "Usage: ${script_name} <lt|light|lights|ram|rams> <on|off|1|0> <on|off|1|0>"
                 ;;
         esac
 
