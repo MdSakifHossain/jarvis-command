@@ -54,19 +54,20 @@ show_banner() {
 # ── Help ────────────────────────────────────────────────────────────────────
 show_help() {
     cat << EOF
-${script_name} v${version} - Oooga Booga Buga
+${script_name} v${version} - Oooga Booga Bugaa
 
 Usage: ${script_name} <command>
 
 Available commands:
-    hello                   Display hello world message
     attendance-sheet        Create this month's attendance sheet
+    lights                  Turns RAM LED lights On/Off
+    version                 Show Version
     help                    Show this help message
 
 Examples:
-    ${script_name} hello
-    ${script_name} hi Sakif
     ${script_name} attendance-sheet
+    ${script_name} lights <on|off|1|0>
+    ${script_name} version
     ${script_name} help
 EOF
 }
@@ -78,6 +79,28 @@ EOF
 case "$1" in
     attendance-sheet)
         echo "This month's attendance sheet has been created."
+        ;;
+
+    lights)
+        # openrgb --mode off;
+
+        case "$2" in
+            on|1)
+                echo "Turning lights ON..."
+                openrgb --color FFFFFF
+                ;;
+
+            off|0)
+                echo "Turning lights OFF..."
+                openrgb --mode off
+                ;;
+
+            *)
+                echo "Error: Unknown lights command."
+                echo "Usage: jarvis lights <on|off|1|0>"
+                ;;
+        esac
+
         ;;
 
     version|v|--version|-v)
