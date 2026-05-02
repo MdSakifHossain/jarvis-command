@@ -6,7 +6,7 @@
 
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
-version="0.4"
+version="0.5"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -120,7 +120,7 @@ case "$1" in
                 dbus-send --session --dest=org.gnome.ScreenSaver \
                     --type=method_call --print-reply \
                     /org/gnome/ScreenSaver \
-                    org.gnome.ScreenSaver.SetActive boolean:true
+                    org.gnome.ScreenSaver.Lock
                 log_txt_nm "[INFO] Command execution Completed"
                 ;;
 
