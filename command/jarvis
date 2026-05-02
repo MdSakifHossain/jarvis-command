@@ -97,7 +97,7 @@ Available commands:
     lights                  Turns RAM LED lights On/Off
     screen                  Lock/Unlocks Screen
     version                 Show Version
-    help                    Show help
+    help                    Show Help
 
 Examples:
     ${script_name} attendance-sheet
