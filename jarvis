@@ -6,7 +6,7 @@
 
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
-version="0.2"
+version="0.3"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -28,6 +28,12 @@ log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
 
 # ── UI helpers ────────────────────────────────────────────────────────────────
 divider()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+show_final_error() {
+    log_txt_nm "Unknown command. Type: '${script_name} --help' for usage."
+}
 
 # ── Banner ────────────────────────────────────────────────────────────────────
 show_banner() {
@@ -99,7 +105,7 @@ case "$1" in
 
             *)
                 log_txt_nm "[Error]: Unknown lights command."
-                log_txt_nm "Usage: ${script_name} <lt|light|lights|ram|rams> <on|off|1|0> <on|off|1|0>"
+                show_final_error
                 ;;
         esac
 
@@ -114,6 +120,6 @@ case "$1" in
         ;;
 
     *)
-        log_txt_nm "Unknown command. Type: '${script_name} --help' for usage."
+        show_final_error
         ;;
 esac
