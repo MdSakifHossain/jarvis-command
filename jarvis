@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+# =============================================================================
+# Personal Command Line Tool
+# =============================================================================
+
+# ── Identity ──────────────────────────────────────────────────────────────────
+script_name="$(basename "$0")"
+version="0"
+
+# ── Colors ────────────────────────────────────────────────────────────────────
+RESET='\033[0m'
+BOLD='\033[1m'
+DIM='\033[2m'
+ORANGE='\033[38;5;209m'
+BORANGE='\033[1;38;5;209m'
+DIM_ORANGE='\033[2;38;5;209m'
+
+# ── Color helpers ─────────────────────────────────────────────────────────────
+log_clr_l1() { echo -e "${ORANGE}${1}${RESET}"; }
+log_clr_l2() { echo -e "${BORANGE}${1}${RESET}"; }
+log_clr_l3() { echo -e "${DIM_ORANGE}${1}${RESET}"; }
+
+# ── Text helpers ──────────────────────────────────────────────────────────────
+log_txt_nm() { echo -e "${1}"; }
+log_txt_bd() { echo -e "${BOLD}${1}${RESET}"; }
+log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
+
+# ── UI helpers ────────────────────────────────────────────────────────────────
+divider()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+
+# ── Banner ────────────────────────────────────────────────────────────────────
+show_banner() {
+  echo
+  log_clr_l2 "  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗";
+  log_clr_l2 "  ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝";
+  log_clr_l2 "  ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  ";
+  log_clr_l1 "  ██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝  ";
+  log_clr_l1 "  ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗";
+  log_clr_l3 "   ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝";
+  echo
+  log_clr_l2 "  ██████╗  ██████╗ ███████╗███████╗██╗                          ";
+  log_clr_l2 "  ██╔══██╗██╔═══██╗██╔════╝██╔════╝██║                          ";
+  log_clr_l2 "  ██████╔╝██║   ██║███████╗███████╗██║                          ";
+  log_clr_l1 "  ██╔══██╗██║   ██║╚════██║╚════██║╚═╝                          ";
+  log_clr_l1 "  ██████╔╝╚██████╔╝███████║███████║██╗                          ";
+  log_clr_l3 "  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝╚═╝                          ";
+  echo
+  log_txt_dm "  Type: '${script_name} --help' for Help";
+  divider
+  echo
+}
+
+# ── Help ────────────────────────────────────────────────────────────────────
+show_help() {
+    cat << EOF
+${script_name} v${version} - Oooga Booga Buga
+
+Usage: ${script_name} <command>
+
+Available commands:
+    hello                   Display hello world message
+    attendance-sheet        Create this month's attendance sheet
+    help                    Show this help message
+
+Examples:
+    ${script_name} hello
+    ${script_name} hi Sakif
+    ${script_name} attendance-sheet
+    ${script_name} help
+EOF
+}
+
+
+# =================================================================================
+# == Execution ====================================================================
+# =================================================================================
+case "$1" in
+    attendance-sheet)
+        echo "This month's attendance sheet has been created."
+        ;;
+
+    version|v|--version|-v)
+        echo "${script_name} v${version}"
+        ;;
+
+    help|h|--help|-h)
+        show_help
+        ;;
+
+    *)
+        echo "Unknown command. Type: '${script_name} --help' for usage."
+        ;;
+esac
