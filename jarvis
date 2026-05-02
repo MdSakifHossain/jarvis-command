@@ -78,7 +78,7 @@ EOF
 # =================================================================================
 case "$1" in
     attendance-sheet)
-        echo "This month's attendance sheet has been created."
+        log_txt_nm "This month's attendance sheet has been created."
         ;;
 
     lt|lts|light|lights|ram|rams)
@@ -86,25 +86,27 @@ case "$1" in
 
         case "$2" in
             on|1)
-                echo "[INFO] Turning lights ON..."
+                log_txt_nm "[INFO] Turning lights ON..."
                 openrgb --color FFFFFF
+                log_txt_nm "[INFO] Command execution Completed"
                 ;;
 
             off|0)
-                echo "[INFO] Turning lights OFF..."
+                log_txt_nm "[INFO] Turning lights OFF..."
                 openrgb --mode off
+                log_txt_nm "[INFO] Command execution Completed"
                 ;;
 
             *)
-                echo "[Error]: Unknown lights command."
-                echo "Usage: ${script_name} <lt|light|lights|ram|rams> <on|off|1|0> <on|off|1|0>"
+                log_txt_nm "[Error]: Unknown lights command."
+                log_txt_nm "Usage: ${script_name} <lt|light|lights|ram|rams> <on|off|1|0> <on|off|1|0>"
                 ;;
         esac
 
         ;;
 
     version|v|--version|-v)
-        echo "${script_name} v${version}"
+        log_txt_nm "${script_name} v${version}"
         ;;
 
     help|h|--help|-h)
@@ -112,6 +114,6 @@ case "$1" in
         ;;
 
     *)
-        echo "Unknown command. Type: '${script_name} --help' for usage."
+        log_txt_nm "Unknown command. Type: '${script_name} --help' for usage."
         ;;
 esac
