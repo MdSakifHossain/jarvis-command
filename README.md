@@ -9,7 +9,7 @@ A flexible installer for turning any script into a system-wide command.
 - Install **`command/jarvis`** as a global command
 
 ```shell
-jarvis v0.5 - Oooga Booga Bugaa
+jarvis - Personal CLI Tool
 
 Usage: jarvis <command>
 
@@ -18,7 +18,7 @@ Available commands:
     lights                  Turns RAM LED lights On/Off
     screen                  Lock/Unlocks Screen
     version                 Show Version
-    help                    Show help
+    help                    Show Help
 
 Examples:
     jarvis attendance-sheet
