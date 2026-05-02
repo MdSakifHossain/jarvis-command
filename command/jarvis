@@ -3,7 +3,7 @@
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.10"
+version="0.10.1"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -27,8 +27,7 @@ log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
 show_divider()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
 divider_small()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
 
-# ── helpers ───────────────────────────────────────────────────────────────────
-
+# ── Helpers ───────────────────────────────────────────────────────────────────
 show_final_error() {
     log_txt_nm "Unknown command. Type: '${script_name} --help' for usage."
 }
@@ -69,7 +68,12 @@ show_banner() {
   current_width=$(tput cols 2>/dev/null || echo 80) # Get current terminal width
   cutoff_width=60 # Define what counts as "small"
 
+  is_small=false
   if [ "$current_width" -lt "$cutoff_width" ]; then
+    is_small=true
+  fi
+
+  if $is_small; then
     show_banner_1
   else
     show_banner_2
@@ -77,11 +81,12 @@ show_banner() {
 
   log_txt_dm "  Type: '${script_name} --help' for Help";
 
-  if [ "$current_width" -lt "$cutoff_width" ]; then
+  if $is_small; then
     divider_small
   else
     show_divider
   fi
+
   echo
 }
 
@@ -102,7 +107,7 @@ Available commands:
 Examples:
     ${script_name} attendance-sheet
     ${script_name} <lt|lts|light|lights|ram|rams> <on|off|1|0>
-    ${script_name} screen <lock|unclock>
+    ${script_name} screen <lock|unlock>
     ${script_name} version
     ${script_name} help
 EOF
@@ -155,7 +160,7 @@ case "$1" in
                     log_txt_nm "[INFO] Lock scheduled in ${delay_min} minute(s)..."
 
                     (
-                        sleep $((delay_min * 60))
+                        sleep "$((delay_min * 60))"
                         dbus-send --session --dest=org.gnome.ScreenSaver \
                             --type=method_call --print-reply \
                             /org/gnome/ScreenSaver \
