@@ -67,8 +67,9 @@ Usage: ${script_name} <command>
 Available commands:
     attendance-sheet        Create this month's attendance sheet
     lights                  Turns RAM LED lights On/Off
+    screen                  Lock/Unlocks Screen
     version                 Show Version
-    help                    Show this help message
+    help                    Show help
 
 Examples:
     ${script_name} attendance-sheet
