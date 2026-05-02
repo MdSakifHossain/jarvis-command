@@ -6,7 +6,7 @@
 
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
-version="0.5"
+version="0.6"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -116,12 +116,32 @@ case "$1" in
     screen)
         case "$2" in
             lock)
-                log_txt_nm "[INFO] Locking Screen..."
-                dbus-send --session --dest=org.gnome.ScreenSaver \
-                    --type=method_call --print-reply \
-                    /org/gnome/ScreenSaver \
-                    org.gnome.ScreenSaver.Lock
+                delay_min="$3"
+
+                if [[ -n "$delay_min" && ! "$delay_min" =~ ^[0-9]+$ ]]; then
+                    log_txt_nm "[Error]: Delay must be a number (minutes)."
+                    exit 1
+                fi
+
+                if [[ -n "$delay_min" && "$delay_min" -gt 0 ]]; then
+                    log_txt_nm "[INFO] Lock scheduled in ${delay_min} minute(s)..."
+
+                    (
+                        sleep $((delay_min * 60))
+                        dbus-send --session --dest=org.gnome.ScreenSaver \
+                            --type=method_call --print-reply \
+                            /org/gnome/ScreenSaver \
+                            org.gnome.ScreenSaver.Lock
+                    ) >/dev/null 2>&1 & disown
+
+                else
+                    log_txt_nm "[INFO] Locking Screen..."
+                        dbus-send --session --dest=org.gnome.ScreenSaver \
+                            --type=method_call --print-reply \
+                            /org/gnome/ScreenSaver \
+                            org.gnome.ScreenSaver.Lock
                 log_txt_nm "[INFO] Command execution Completed"
+                fi
                 ;;
 
             unlock)
