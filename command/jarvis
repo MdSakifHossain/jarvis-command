@@ -6,7 +6,7 @@
 
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
-version="0.7"
+version="0.8"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -27,7 +27,8 @@ log_txt_bd() { echo -e "${BOLD}${1}${RESET}"; }
 log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
 
 # ── UI helpers ────────────────────────────────────────────────────────────────
-divider()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+show_divider()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+divider_small()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,20 @@ show_final_error() {
 }
 
 # ── Banner ────────────────────────────────────────────────────────────────────
-show_banner() {
+show_banner_1() {
+  echo
+  log_clr_l2 "    _      __      __                      ";
+  log_clr_l2 "   | | /| / /___  / /____ ___   __ _  ___  ";
+  log_clr_l2 "   | |/ |/ // -_)/ // __// _ \ /  ' \/ -_) ";
+  log_clr_l2 "   |__/|__/ \__//_/ \__/ \___//_/_/_/\__/  ";
+  log_clr_l2 "     ___              __      ____ _       ";
+  log_clr_l2 "    / _ ) ___ _ ____ / /__   / __/(_)____  ";
+  log_clr_l2 "   / _  |/ _ '// __//  '_/  _\ \ / // __/_ ";
+  log_clr_l2 "  /____/ \_,_/ \__//_/\_\  /___//_//_/  (_)";
+  echo
+}
+
+show_banner_2() {
   echo
   log_clr_l2 "  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗";
   log_clr_l2 "  ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝";
@@ -52,8 +66,25 @@ show_banner() {
   log_clr_l1 "  ██████╔╝██║  ██║╚██████╗██║  ██╗    ███████║██║██║  ██║██╗    ";
   log_clr_l3 "  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝    ╚══════╝╚═╝╚═╝  ╚═╝╚═╝    ";
   echo
+}
+
+show_banner() {
+  current_width=$(tput cols 2>/dev/null || echo 80) # Get current terminal width
+  cutoff_width=60 # Define what counts as "small"
+
+  if [ "$current_width" -lt "$cutoff_width" ]; then
+    show_banner_1
+  else
+    show_banner_2
+  fi
+
   log_txt_dm "  Type: '${script_name} --help' for Help";
-  divider
+
+  if [ "$current_width" -lt "$cutoff_width" ]; then
+    divider_small
+  else
+    show_divider
+  fi
   echo
 }
 
