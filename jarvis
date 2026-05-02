@@ -6,7 +6,7 @@
 
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
-version="0.3"
+version="0.4"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -73,6 +73,7 @@ Available commands:
 Examples:
     ${script_name} attendance-sheet
     ${script_name} <lt|lts|light|lights|ram|rams> <on|off|1|0>
+    ${script_name} screen <lock|unclock>
     ${script_name} version
     ${script_name} help
 EOF
@@ -109,6 +110,33 @@ case "$1" in
                 ;;
         esac
 
+        ;;
+
+    screen)
+        case "$2" in
+            lock)
+                log_txt_nm "[INFO] Locking Screen..."
+                dbus-send --session --dest=org.gnome.ScreenSaver \
+                    --type=method_call --print-reply \
+                    /org/gnome/ScreenSaver \
+                    org.gnome.ScreenSaver.SetActive boolean:true
+                log_txt_nm "[INFO] Command execution Completed"
+                ;;
+
+            unlock)
+                log_txt_nm "[INFO] Unlocking Screen..."
+                dbus-send --session --dest=org.gnome.ScreenSaver \
+                    --type=method_call --print-reply \
+                    /org/gnome/ScreenSaver \
+                    org.gnome.ScreenSaver.SetActive boolean:false
+                log_txt_nm "[INFO] Command execution Completed"
+                ;;
+
+            *)
+                log_txt_nm "[Error]: Unknown command."
+                show_final_error
+                ;;
+        esac
         ;;
 
     version|v|--version|-v)
