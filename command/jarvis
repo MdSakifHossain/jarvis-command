@@ -3,7 +3,7 @@
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.12.1"
+version="0.13.0"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -104,6 +104,11 @@ show_banner() {
   echo
 }
 
+refresh_banner() {
+    clear
+    show_banner
+}
+
 # ── Help ────────────────────────────────────────────────────────────────────
 show_help() {
     cat << EOF
@@ -136,7 +141,8 @@ EOF
 # =================================================================================
 case "$1" in
     attendance-sheet)
-        log_txt_nm "This month's attendance sheet has been created."
+        refresh_banner
+        log_txt_nm "[INFO] This month's attendance sheet has been created."
         ;;
 
     lt|lts|light|lights|ram|rams|led|leds)
@@ -144,12 +150,14 @@ case "$1" in
 
         case "$2" in
             on|1)
+                refresh_banner
                 log_txt_nm "[INFO] Turning lights ON..."
                 openrgb --color FFFFFF
                 log_txt_nm "[INFO] Command execution Completed"
                 ;;
 
             off|0)
+                refresh_banner
                 log_txt_nm "[INFO] Turning lights OFF..."
                 openrgb --mode off
                 log_txt_nm "[INFO] Command execution Completed"
@@ -171,6 +179,7 @@ case "$1" in
         fi
 
         if [[ -n "$delay_min" && "$delay_min" -gt 0 ]]; then
+            refresh_banner
             log_txt_nm "[INFO] Lock scheduled in ${delay_min} minute(s)..."
 
             (
@@ -179,6 +188,7 @@ case "$1" in
             ) >/dev/null 2>&1 & disown
 
         else
+            refresh_banner
             log_txt_nm "[INFO] Locking Screen..."
             lock_helper
             log_txt_nm "[INFO] Command execution Completed"
@@ -186,6 +196,7 @@ case "$1" in
         ;;
 
     unlock)
+        refresh_banner
         log_txt_nm "[INFO] Unlocking Screen..."
         unlock_helper
         log_txt_nm "[INFO] Command execution Completed"
