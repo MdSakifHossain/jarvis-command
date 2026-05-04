@@ -3,7 +3,7 @@
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.12.0"
+version="0.12.1"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -114,14 +114,17 @@ Usage: ${script_name} <command>
 Available commands:
     attendance-sheet        Create this month's attendance sheet
     lights                  Turns RAM LED lights On/Off
-    screen                  Lock/Unlocks Screen
+    lock                    Locks Screen
+    unlock                  Unlocks Screen
     version                 Show Version
     help                    Show Help
 
 Examples:
     ${script_name} attendance-sheet
-    ${script_name} <lt|lts|light|lights|ram|rams> <on|off|1|0>
-    ${script_name} screen <lock|unlock>
+    ${script_name} <lt|lts|light|lights|ram|rams|led|leds> <on|off|1|0>
+    ${script_name} lock
+    ${script_name} lock <t>
+    ${script_name} unlock
     ${script_name} version
     ${script_name} help
 EOF
