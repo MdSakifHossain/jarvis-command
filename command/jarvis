@@ -3,7 +3,7 @@
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.10.3"
+version="0.10.4"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -29,7 +29,7 @@ divider_small()  { log_clr_l3 "  ━━━━━━━━━━━━━━━�
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 show_final_error() {
-    log_txt_nm "Unknown command. Type: '${script_name} --help' for usage."
+    log_txt_nm "Unknown command.\nType \"${script_name} --help\" for more details."
 }
 
 lock_helper() {
@@ -93,7 +93,7 @@ show_banner() {
     show_banner_2
   fi
 
-  log_txt_dm "  Type: '${script_name} --help' for Help";
+  log_txt_dm "  Type \"${script_name} --help\" for more details.";
 
   if $is_small; then
     divider_small
@@ -207,8 +207,6 @@ case "$1" in
         ;;
 
     *)
-        # show_final_error
-        clear
-        show_banner
+        show_final_error
         ;;
 esac
