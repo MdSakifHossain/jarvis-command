@@ -3,7 +3,7 @@
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.13.0"
+version="0.13.1"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -33,15 +33,18 @@ show_final_error() {
 }
 
 lock_helper() {
+    # here i redirected output to silence
     dbus-send --session --dest=org.gnome.ScreenSaver \
         --type=method_call --print-reply \
         /org/gnome/ScreenSaver \
-        org.gnome.ScreenSaver.Lock
+        org.gnome.ScreenSaver.Lock \
+        >/dev/null 2>&1
 }
 
 unlock_helper() {
+    # here i just removed the "--print-reply" from the send lines last portion
     dbus-send --session --dest=org.gnome.ScreenSaver \
-        --type=method_call --print-reply \
+        --type=method_call \
         /org/gnome/ScreenSaver \
         org.gnome.ScreenSaver.SetActive boolean:false
 }
@@ -189,17 +192,19 @@ case "$1" in
 
         else
             refresh_banner
+            log_txt_nm "[INFO] Initializing command..."
             log_txt_nm "[INFO] Locking Screen..."
             lock_helper
-            log_txt_nm "[INFO] Command execution Completed"
+            log_txt_nm "[INFO] Command finished successfully"
         fi
         ;;
 
     unlock)
         refresh_banner
+        log_txt_nm "[INFO] Initializing command..."
         log_txt_nm "[INFO] Unlocking Screen..."
         unlock_helper
-        log_txt_nm "[INFO] Command execution Completed"
+        log_txt_nm "[INFO] Command finished successfully"
         ;;
 
     version|v|--version|-v)
