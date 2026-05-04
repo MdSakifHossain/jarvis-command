@@ -3,7 +3,7 @@
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.10.2"
+version="0.10.3"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -30,6 +30,20 @@ divider_small()  { log_clr_l3 "  ━━━━━━━━━━━━━━━�
 # ── Helpers ───────────────────────────────────────────────────────────────────
 show_final_error() {
     log_txt_nm "Unknown command. Type: '${script_name} --help' for usage."
+}
+
+lock_helper() {
+    dbus-send --session --dest=org.gnome.ScreenSaver \
+        --type=method_call --print-reply \
+        /org/gnome/ScreenSaver \
+        org.gnome.ScreenSaver.Lock
+}
+
+unlock_helper() {
+    dbus-send --session --dest=org.gnome.ScreenSaver \
+        --type=method_call --print-reply \
+        /org/gnome/ScreenSaver \
+        org.gnome.ScreenSaver.SetActive boolean:false
 }
 
 # ── Banner ────────────────────────────────────────────────────────────────────
@@ -161,28 +175,19 @@ case "$1" in
 
                     (
                         sleep "$((delay_min * 60))"
-                        dbus-send --session --dest=org.gnome.ScreenSaver \
-                            --type=method_call --print-reply \
-                            /org/gnome/ScreenSaver \
-                            org.gnome.ScreenSaver.Lock
+                        lock_helper
                     ) >/dev/null 2>&1 & disown
 
                 else
                     log_txt_nm "[INFO] Locking Screen..."
-                    dbus-send --session --dest=org.gnome.ScreenSaver \
-                        --type=method_call --print-reply \
-                        /org/gnome/ScreenSaver \
-                        org.gnome.ScreenSaver.Lock
+                    lock_helper
                     log_txt_nm "[INFO] Command execution Completed"
                 fi
                 ;;
 
             unlock)
                 log_txt_nm "[INFO] Unlocking Screen..."
-                dbus-send --session --dest=org.gnome.ScreenSaver \
-                    --type=method_call --print-reply \
-                    /org/gnome/ScreenSaver \
-                    org.gnome.ScreenSaver.SetActive boolean:false
+                unlock_helper
                 log_txt_nm "[INFO] Command execution Completed"
                 ;;
 
