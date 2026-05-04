@@ -3,7 +3,7 @@
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.11.0"
+version="0.12.0"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -136,7 +136,7 @@ case "$1" in
         log_txt_nm "This month's attendance sheet has been created."
         ;;
 
-    lt|lts|light|lights|ram|rams)
+    lt|lts|light|lights|ram|rams|led|leds)
         # openrgb --mode off;
 
         case "$2" in
