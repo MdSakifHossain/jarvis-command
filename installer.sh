@@ -37,14 +37,17 @@ log_txt_bd() { echo -e "${BOLD}${1}${RESET}"; }
 log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
 
 # ── Semantic logging ──────────────────────────────────────────────────────────
-log_info()  { echo -e "  ${ORANGE}ℹ${RESET}  $*"; }
-log_ok()    { echo -e "  ${BGREEN}✔${RESET}  $*"; }
-log_warn()  { echo -e "  ${YELLOW}⚠${RESET}  $*"; }
-log_fail()  { echo -e "\n  ${RED}✖  ERROR:${RESET}  $*\n" >&2; exit 1; }
+log_info() { echo -e "  ${ORANGE}ℹ${RESET}  $*"; }
+log_ok() { echo -e "  ${BGREEN}✔${RESET}  $*"; }
+log_warn() { echo -e "  ${YELLOW}⚠${RESET}  $*"; }
+log_fail() {
+  echo -e "\n  ${RED}✖  ERROR:${RESET}  $*\n" >&2
+  exit 1
+}
 log_label() { echo -e "  ${BORANGE}▸${RESET}  ${BWHITE}$*${RESET}"; }
 
 # ── UI helpers ────────────────────────────────────────────────────────────────
-divider()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+divider() { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
 thin_div() { log_txt_dm "  ──────────────────────────────────────────────────────────────────"; }
 
 prompt_line() {
@@ -136,9 +139,9 @@ cmd_install() {
   # Parse args
   for arg in "$@"; do
     case "$arg" in
-      -y|y)   auto=true ;;
-      -*)     log_fail "Unknown flag: ${arg}. Use --help for usage." ;;
-      *)      raw_src="$arg" ;;
+      -y | y) auto=true ;;
+      -*) log_fail "Unknown flag: ${arg}. Use --help for usage." ;;
+      *) raw_src="$arg" ;;
     esac
   done
 
@@ -217,9 +220,9 @@ cmd_uninstall() {
 
   for arg in "$@"; do
     case "$arg" in
-      -y|y)   auto=true ;;
-      -*)     log_fail "Unknown flag: ${arg}. Use --help for usage." ;;
-      *)      raw_src="$arg" ;;
+      -y | y) auto=true ;;
+      -*) log_fail "Unknown flag: ${arg}. Use --help for usage." ;;
+      *) raw_src="$arg" ;;
     esac
   done
 
@@ -294,16 +297,25 @@ cmd_uninstall() {
 # ── Entry point ───────────────────────────────────────────────────────────────
 # Handle top-level flags before subcommand dispatch
 case "${1:-}" in
-  -h|--help)    show_help;                             exit 0 ;;
-  -v|--version) echo "${SCRIPT_NAME} v${VERSION}";    exit 0 ;;
+  -h | --help)
+    show_help
+    exit 0
+    ;;
+  -v | --version)
+    echo "${SCRIPT_NAME} v${VERSION}"
+    exit 0
+    ;;
 esac
 
 SUBCOMMAND="${1:-}"
 shift || true
 
 case "$SUBCOMMAND" in
-  install|i)              cmd_install "$@" ;;
-  uninstall|remove|rm)    cmd_uninstall "$@" ;;
-  "")                     show_help; exit 0 ;;
-  *)                      log_fail "Unknown subcommand: '${SUBCOMMAND}'. Use --help for usage." ;;
+  install | i) cmd_install "$@" ;;
+  uninstall | remove | rm) cmd_uninstall "$@" ;;
+  "")
+    show_help
+    exit 0
+    ;;
+  *) log_fail "Unknown subcommand: '${SUBCOMMAND}'. Use --help for usage." ;;
 esac

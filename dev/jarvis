@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.1.0"
+version="0.2.0"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -30,78 +30,92 @@ log_txt_bd() { echo -e "${BOLD}${1}${RESET}"; }
 log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
 
 # ── Semantic logging ──────────────────────────────────────────────────────────
-log_info()  { echo -e "  ${ORANGE}ℹ${RESET}  $*"; }
-log_ok()    { echo -e "  ${BGREEN}✔${RESET}  $*"; }
-log_warn()  { echo -e "  ${YELLOW}⚠${RESET}  $*"; }
-log_fail()  { echo -e "\n${RED}✖ ERROR:  ${RESET}$*\n" >&2; exit 1; }
+log_info() { echo -e "  ${ORANGE}ℹ${RESET}  $*"; }
+log_ok() { echo -e "  ${BGREEN}✔${RESET}  $*"; }
+log_warn() { echo -e "  ${YELLOW}⚠${RESET}  $*"; }
+log_fail() {
+  echo -e "\n${RED}✖ ERROR:  ${RESET}$*\n" >&2
+  exit 1
+}
 log_label() { echo -e "  ${BORANGE}▸${RESET}  ${BWHITE}$*${RESET}"; }
 
-
 # ── UI helpers ────────────────────────────────────────────────────────────────
-show_divider()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
-divider_small()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+show_divider() { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+divider_small() { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 show_final_error() {
-    log_txt_nm "Unknown command.\nType \"${script_name} --help\" for more details."
+  log_txt_nm "Unknown command.\nType \"${script_name} --help\" for more details."
 }
 
 show_version() {
-    log_txt_nm "${script_name} v${version}"
+  log_txt_nm "${script_name} v${version}"
 }
 
 lock_helper() {
-    # here i redirected output to silence
-    dbus-send --session --dest=org.gnome.ScreenSaver \
-        --type=method_call --print-reply \
-        /org/gnome/ScreenSaver \
-        org.gnome.ScreenSaver.Lock \
-        >/dev/null 2>&1
+  # here i redirected output to silence
+  dbus-send --session --dest=org.gnome.ScreenSaver \
+    --type=method_call --print-reply \
+    /org/gnome/ScreenSaver \
+    org.gnome.ScreenSaver.Lock \
+    > /dev/null 2>&1
 }
 
 unlock_helper() {
-    # here i just removed the "--print-reply" from the send lines last portion
-    dbus-send --session --dest=org.gnome.ScreenSaver \
-        --type=method_call \
-        /org/gnome/ScreenSaver \
-        org.gnome.ScreenSaver.SetActive boolean:false
+  # here i just removed the "--print-reply" from the send lines last portion
+  dbus-send --session --dest=org.gnome.ScreenSaver \
+    --type=method_call \
+    /org/gnome/ScreenSaver \
+    org.gnome.ScreenSaver.SetActive boolean:false
+}
+
+lights_on_helper() {
+  log_txt_nm "[INFO] Turning lights ON..."
+  openrgb --color ffffff
+  log_txt_nm "[INFO] Command execution Completed"
+}
+
+lights_off_helper() {
+  log_txt_nm "[INFO] Turning lights OFF..."
+  openrgb --mode off
+  log_txt_nm "[INFO] Command execution Completed"
 }
 
 # ── Banner ────────────────────────────────────────────────────────────────────
 show_banner_1() {
   echo
-  log_clr_l2 "    _      __      __                      ";
-  log_clr_l2 "   | | /| / /___  / /____ ___   __ _  ___  ";
-  log_clr_l2 "   | |/ |/ // -_)/ // __// _ \ /  ' \/ -_) ";
-  log_clr_l2 "   |__/|__/ \__//_/ \__/ \___//_/_/_/\__/  ";
-  log_clr_l2 "     ___              __      ____ _       ";
-  log_clr_l2 "    / _ ) ___ _ ____ / /__   / __/(_)____  ";
-  log_clr_l2 "   / _  |/ _ '// __//  '_/  _\ \ / // __/_ ";
-  log_clr_l2 "  /____/ \_,_/ \__//_/\_\  /___//_//_/  (_)";
+  log_clr_l2 "    _      __      __                      "
+  log_clr_l2 "   | | /| / /___  / /____ ___   __ _  ___  "
+  log_clr_l2 "   | |/ |/ // -_)/ // __// _ \ /  ' \/ -_) "
+  log_clr_l2 "   |__/|__/ \__//_/ \__/ \___//_/_/_/\__/  "
+  log_clr_l2 "     ___              __      ____ _       "
+  log_clr_l2 "    / _ ) ___ _ ____ / /__   / __/(_)____  "
+  log_clr_l2 "   / _  |/ _ '// __//  '_/  _\ \ / // __/_ "
+  log_clr_l2 "  /____/ \_,_/ \__//_/\_\  /___//_//_/  (_)"
   echo
 }
 
 show_banner_2() {
   echo
-  log_clr_l2 "  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗";
-  log_clr_l2 "  ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝";
-  log_clr_l2 "  ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  ";
-  log_clr_l1 "  ██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝  ";
-  log_clr_l1 "  ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗";
-  log_clr_l3 "   ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝";
+  log_clr_l2 "  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗"
+  log_clr_l2 "  ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝"
+  log_clr_l2 "  ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  "
+  log_clr_l1 "  ██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝  "
+  log_clr_l1 "  ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗"
+  log_clr_l3 "   ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝"
   echo
-  log_clr_l2 "  ██████╗  █████╗  ██████╗██╗  ██╗    ███████╗██╗██████╗        ";
-  log_clr_l2 "  ██╔══██╗██╔══██╗██╔════╝██║ ██╔╝    ██╔════╝██║██╔══██╗       ";
-  log_clr_l2 "  ██████╔╝███████║██║     █████╔╝     ███████╗██║██████╔╝       ";
-  log_clr_l1 "  ██╔══██╗██╔══██║██║     ██╔═██╗     ╚════██║██║██╔══██╗       ";
-  log_clr_l1 "  ██████╔╝██║  ██║╚██████╗██║  ██╗    ███████║██║██║  ██║██╗    ";
-  log_clr_l3 "  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝    ╚══════╝╚═╝╚═╝  ╚═╝╚═╝    ";
+  log_clr_l2 "  ██████╗  █████╗  ██████╗██╗  ██╗    ███████╗██╗██████╗        "
+  log_clr_l2 "  ██╔══██╗██╔══██╗██╔════╝██║ ██╔╝    ██╔════╝██║██╔══██╗       "
+  log_clr_l2 "  ██████╔╝███████║██║     █████╔╝     ███████╗██║██████╔╝       "
+  log_clr_l1 "  ██╔══██╗██╔══██║██║     ██╔═██╗     ╚════██║██║██╔══██╗       "
+  log_clr_l1 "  ██████╔╝██║  ██║╚██████╗██║  ██╗    ███████║██║██║  ██║██╗    "
+  log_clr_l3 "  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝    ╚══════╝╚═╝╚═╝  ╚═╝╚═╝    "
   echo
 }
 
 show_banner() {
-  current_width=$(tput cols 2>/dev/null || echo 80) # Get current terminal width
-  cutoff_width=60 # Define what counts as "small"
+  current_width=$(tput cols 2> /dev/null || echo 80) # Get current terminal width
+  cutoff_width=60                                    # Define what counts as "small"
 
   is_small=false
   if [ "$current_width" -lt "$cutoff_width" ]; then
@@ -114,7 +128,7 @@ show_banner() {
     show_banner_2
   fi
 
-  log_txt_dm "  Type \"${script_name} --help\" for more details.";
+  log_txt_dm "  Type \"${script_name} --help\" for more details."
 
   if $is_small; then
     divider_small
@@ -126,13 +140,13 @@ show_banner() {
 }
 
 refresh_banner() {
-    clear
-    show_banner
+  clear
+  show_banner
 }
 
 # ── Help ────────────────────────────────────────────────────────────────────
 show_help() {
-    cat << EOF
+  cat << EOF
 ${script_name} - ${small_desc}
 
 Usage:
@@ -149,24 +163,69 @@ Flags:
     -v, --version   Show Version Info
     -h, --help      Show Help
 
+For more info, Run:
+
+    ${script_name} <command> --help
+
+
 EOF
 }
 
+# ── Subcommand: lights ───────────────────────────────────────────────────────
+
+cmd_lights() {
+  local cmd_name="lights"
+
+  case "$@" in
+    -h | --help | h | help)
+      log_txt_nm "lights help"
+      ;;
+    on | 1)
+      lights_on_helper
+      ;;
+    off | 0)
+      lights_off_helper
+      ;;
+    *)
+      log_txt_nm "\nUnknown Argument\nType '${script_name} ${cmd_name} --help'\n"
+      ;;
+  esac
+}
 
 # =================================================================================
 # == Execution ====================================================================
 # =================================================================================
 case "${1:-}" in
-    v|-v|version|--version)   clear;  show_version;  exit 0 ;;
-    h|-h|help|--help)         clear;  show_help;     exit 0 ;;
+  v | -v | version | --version)
+    clear
+    show_version
+    exit 0
+    ;;
+  h | -h | help | --help)
+    clear
+    show_help
+    exit 0
+    ;;
 esac
 
 SUBCOMMAND="${1:-}"
 shift || true
 
 case "$SUBCOMMAND" in
-    lt|lts|light|lights|ram|rams|led|leds)    echo "lights";      exit 0 ;;
-    lock)                                     echo "lock";        exit 0 ;;
-    unlock)                                   echo "unlock";      exit 0 ;;
-    *)                                        clear;  show_help;  exit 0 ;;
+  light | lights | ram | rams | led | leds | lt | lts)
+    cmd_lights "$@"
+    exit 0
+    ;;
+  lock)
+    echo "lock"
+    exit 0
+    ;;
+  unlock)
+    echo "unlock"
+    exit 0
+    ;;
+  *)
+    show_help
+    exit 0
+    ;;
 esac
