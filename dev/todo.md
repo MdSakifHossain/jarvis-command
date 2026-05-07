@@ -3,7 +3,7 @@
 - [ ] push lock command
 - [ ] push unlock command
 
-- [ ] Light Command
+- [x] Light Command
   - [ ] push light command
   - [ ] edit change help text of light command
   - [ ] instead of `openrgb --mode off` set color black just like the on command
