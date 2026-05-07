@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="0.3.1"
+version="0.3.2"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -172,6 +172,31 @@ For more info, Run:
 EOF
 }
 
+show_light_help() {
+  local cmd_name="lights"
+
+  cat << EOF
+Change Color of RAM LED
+
+Usage:
+
+    ${script_name} ${cmd_name} [Command]
+    ${script_name} ${cmd_name} [Flags]
+
+Available Commands:
+
+    on        Turn on RAM LED
+    off       Turn off RAM LED
+    help      Show Help
+
+Flags:
+
+    -h,       Show Help
+    --help    Show Help
+
+EOF
+}
+
 # ── Subcommand: lights ───────────────────────────────────────────────────────
 
 cmd_lights() {
@@ -179,7 +204,7 @@ cmd_lights() {
 
   case "$@" in
     -h | --help | h | help)
-      log_txt_nm "lights help"
+      show_light_help
       ;;
     on | 1)
       lights_on_helper
@@ -188,10 +213,7 @@ cmd_lights() {
       lights_off_helper
       ;;
     *)
-      echo
-      log_txt_nm "Unknown Argument"
-      log_txt_nm "Type '${script_name} ${cmd_name} --help'"
-      echo
+      show_light_help
       ;;
   esac
 }
