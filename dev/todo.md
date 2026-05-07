@@ -1,7 +1,7 @@
 # dev: to-do list
 
-- [ ] push lock command
-- [ ] push unlock command
+- [x] push lock command
+- [x] push unlock command
 
 - [x] Light Command
   - [ ] push light command
