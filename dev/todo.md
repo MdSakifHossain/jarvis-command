@@ -7,5 +7,6 @@
 
 - [x] Light Command
   - [x] push light command
-  - [ ] edit change help text of light command
-  - [ ] instead of `openrgb --mode off` set color black just like the on command
+  - [x] edit change help text of light command
+  - [x] instead of `openrgb --mode off` set color black just like the on command
+  - [x] make the `openrgb` command output silent.
