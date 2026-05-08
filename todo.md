@@ -2,4 +2,4 @@
 
 - [x] make `monitor/observe` command for vault observer
 - [x] clean up the clear command at the top level flag parsing
-- [ ] update README
+- [x] update README
