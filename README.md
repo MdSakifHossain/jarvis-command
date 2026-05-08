@@ -11,21 +11,26 @@ A flexible installer for turning any script into a system-wide command.
 ```shell
 jarvis - Personal CLI Tool
 
-Usage: jarvis <command>
+Usage:
+
+    jarvis [command]
+    jarvis [flags]
 
 Available commands:
-    attendance-sheet        Create this month's attendance sheet
-    lights                  Turns RAM LED lights On/Off
-    screen                  Lock/Unlocks Screen
-    version                 Show Version
-    help                    Show Help
 
-Examples:
-    jarvis attendance-sheet
-    jarvis <lt|lts|light|lights|ram|rams> <on|off|1|0>
-    jarvis screen <lock|unclock>
-    jarvis version
-    jarvis help
+    lights, lock, unlock, observe, monitor,
+    version, help
+
+Flags:
+
+    -v, --version   Show Version Info
+    -h, --help      Show Help
+
+For more info, Run:
+
+    jarvis <command> --help
+
+
 ```
 
 ---
