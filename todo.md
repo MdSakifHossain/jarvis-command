@@ -1,3 +1,4 @@
 # to-do list for jarvis
 
-- [ ] make `monitor/observe` command for vault observer
+- [x] make `monitor/observe` command for vault observer
+- [ ] clean up the clear command at the top level flag parsing
