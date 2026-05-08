@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.2.0"
+version="1.2.1"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -262,12 +262,10 @@ cmd_unlock() {
 # =================================================================================
 case "${1:-}" in
     v | -v | version | --version)
-        clear
         show_version
         exit 0
         ;;
     h | -h | help | --help)
-        clear
         show_help
         exit 0
         ;;
