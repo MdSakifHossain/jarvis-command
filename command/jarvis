@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.2.1"
+version="1.2.2"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -70,7 +70,7 @@ unlock_helper() {
 lights_on_helper() {
     echo
     log_info "Turning lights ON..."
-    openrgb --color ffffff > /dev/null 2>&1
+    openrgb --mode static --color ffffff > /dev/null 2>&1
     log_info "Command execution Completed"
     echo
 }
@@ -78,7 +78,7 @@ lights_on_helper() {
 lights_off_helper() {
     echo
     log_info "Turning lights OFF..."
-    openrgb --color 000000 > /dev/null 2>&1
+    openrgb --mode static --color 000000 > /dev/null 2>&1
     log_info "Command execution Completed"
     echo
 }
