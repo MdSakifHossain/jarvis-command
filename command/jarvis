@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.3.0"
+version="1.4.0"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -159,7 +159,7 @@ Usage:
 Available commands:
 
     lights, lock, unlock, observe, monitor,
-    tree,  version, help
+    tree, poweroff, version, help
 
 Flags:
 
@@ -291,9 +291,9 @@ case "$SUBCOMMAND" in
         refresh_banner
         tail -f /home/sakif/.local/logs/vault-observer.log
         ;;
-    # poweroff | shutdown)
-	# sudo shutdown now
-	# ;;
+    poweroff | power | pwr  | shutdown)
+	sudo shutdown now
+	;;
     tree | list | lst| ls)
 	tree --gitignore --dirsfirst
 	exit 0
