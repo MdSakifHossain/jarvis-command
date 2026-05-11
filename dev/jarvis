@@ -55,6 +55,19 @@ require_ubuntu() {
     fi
 }
 
+require_cmd() {
+    local cmd="$1"
+    local pkg="${2:-$1}"
+
+    if ! command -v "$cmd" > /dev/null 2>&1; then
+        echo
+        log_fail "Missing dependency: $cmd
+
+Install it using:
+    sudo apt install $pkg"
+    fi
+}
+
 show_version() {
     log_txt_nm "${script_name} v${version}"
 }
@@ -305,6 +318,7 @@ case "$SUBCOMMAND" in
         sudo shutdown now
         ;;
     tree | list | lst | ls)
+        require_cmd tree
         tree --gitignore --dirsfirst
         exit 0
         ;;
