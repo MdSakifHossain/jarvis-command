@@ -80,7 +80,7 @@ require_gnome_screensaver() {
         /org/gnome/ScreenSaver \
         org.gnome.ScreenSaver.GetActive \
         > /dev/null 2>&1 \
-        || log_fail "GNOME ScreenSaver DBus service not available (not a GNOME session?)"
+        || log_fail "Screen lock is not available (GNOME desktop not detected).\n\nTry running this command inside your normal Ubuntu desktop session."
 }
 
 require_gnome_lock() {
