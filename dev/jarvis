@@ -1,0 +1,315 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# ── Identity ──────────────────────────────────────────────────────────────────
+script_name="$(basename "$0")"
+small_desc="Personal CLI Tool"
+version="1.4.3"
+
+# ── Colors ────────────────────────────────────────────────────────────────────
+RESET='\033[0m'
+BOLD='\033[1m'
+DIM='\033[2m'
+ORANGE='\033[38;5;209m'
+BORANGE='\033[1;38;5;209m'
+DIM_ORANGE='\033[2;38;5;209m'
+BWHITE='\033[1;37m'
+BGREEN='\033[1;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[94m'
+BBLUE='\033[1;94m'
+
+# ── Color helpers ─────────────────────────────────────────────────────────────
+log_clr_l1() { echo -e "${ORANGE}${1}${RESET}"; }
+log_clr_l2() { echo -e "${BORANGE}${1}${RESET}"; }
+log_clr_l3() { echo -e "${DIM_ORANGE}${1}${RESET}"; }
+
+# ── Text helpers ──────────────────────────────────────────────────────────────
+log_txt_nm() { echo -e "${1}"; }
+log_txt_bd() { echo -e "${BOLD}${1}${RESET}"; }
+log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
+
+# ── Semantic logging ──────────────────────────────────────────────────────────
+log_info() { log_txt_nm "${BLUE}[INFO]${RESET} $*"; }
+log_ok() { echo -e "  ${BGREEN}✔${RESET}  $*"; }
+log_warn() { echo -e "  ${YELLOW}⚠${RESET}  $*"; }
+log_fail() {
+    log_txt_nm "${RED}[ERROR]${RESET} $* \n" >&2
+    exit 1
+}
+log_label() { echo -e "  ${BORANGE}▸${RESET}  ${BWHITE}$*${RESET}"; }
+
+# ── UI helpers ────────────────────────────────────────────────────────────────
+show_divider() { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+divider_small() { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+require_ubuntu() {
+    source /etc/os-release
+
+    if [[ "$ID" != "ubuntu" ]]; then
+        echo
+        log_fail "This script currently supports Ubuntu only."
+    fi
+}
+
+show_version() {
+    log_txt_nm "${script_name} v${version}"
+}
+
+lock_helper() {
+    dbus-send --session --dest=org.gnome.ScreenSaver \
+        --type=method_call --print-reply \
+        /org/gnome/ScreenSaver \
+        org.gnome.ScreenSaver.Lock \
+        > /dev/null 2>&1
+}
+
+unlock_helper() {
+    dbus-send --session --dest=org.gnome.ScreenSaver \
+        --type=method_call --print-reply \
+        /org/gnome/ScreenSaver \
+        org.gnome.ScreenSaver.SetActive boolean:false \
+        > /dev/null 2>&1
+}
+
+lights_on_helper() {
+    echo
+    log_info "Turning lights ON..."
+    openrgb --mode static --color ffffff > /dev/null 2>&1
+    log_info "Command execution Completed"
+    echo
+}
+
+lights_off_helper() {
+    echo
+    log_info "Turning lights OFF..."
+    openrgb --mode static --color 000000 > /dev/null 2>&1
+    log_info "Command execution Completed"
+    echo
+}
+
+# ── Banner ────────────────────────────────────────────────────────────────────
+show_banner_1() {
+    echo
+    log_clr_l2 "    _      __      __                      "
+    log_clr_l2 "   | | /| / /___  / /____ ___   __ _  ___  "
+    log_clr_l2 "   | |/ |/ // -_)/ // __// _ \ /  ' \/ -_) "
+    log_clr_l2 "   |__/|__/ \__//_/ \__/ \___//_/_/_/\__/  "
+    log_clr_l2 "     ___              __      ____ _       "
+    log_clr_l2 "    / _ ) ___ _ ____ / /__   / __/(_)____  "
+    log_clr_l2 "   / _  |/ _ '// __//  '_/  _\ \ / // __/_ "
+    log_clr_l2 "  /____/ \_,_/ \__//_/\_\  /___//_//_/  (_)"
+    echo
+}
+
+show_banner_2() {
+    echo
+    log_clr_l2 "  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗"
+    log_clr_l2 "  ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝"
+    log_clr_l2 "  ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  "
+    log_clr_l1 "  ██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝  "
+    log_clr_l1 "  ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗"
+    log_clr_l3 "   ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝"
+    echo
+    log_clr_l2 "  ██████╗  █████╗  ██████╗██╗  ██╗    ███████╗██╗██████╗        "
+    log_clr_l2 "  ██╔══██╗██╔══██╗██╔════╝██║ ██╔╝    ██╔════╝██║██╔══██╗       "
+    log_clr_l2 "  ██████╔╝███████║██║     █████╔╝     ███████╗██║██████╔╝       "
+    log_clr_l1 "  ██╔══██╗██╔══██║██║     ██╔═██╗     ╚════██║██║██╔══██╗       "
+    log_clr_l1 "  ██████╔╝██║  ██║╚██████╗██║  ██╗    ███████║██║██║  ██║██╗    "
+    log_clr_l3 "  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝    ╚══════╝╚═╝╚═╝  ╚═╝╚═╝    "
+    echo
+}
+
+show_banner() {
+    current_width=$(tput cols 2> /dev/null || echo 80) # Get current terminal width
+    cutoff_width=60                                    # Define what counts as "small"
+
+    is_small=false
+    if [ "$current_width" -lt "$cutoff_width" ]; then
+        is_small=true
+    fi
+
+    if $is_small; then
+        show_banner_1
+    else
+        show_banner_2
+    fi
+
+    log_txt_dm "  Type \"${script_name} --help\" for more details."
+
+    if $is_small; then
+        divider_small
+    else
+        show_divider
+    fi
+
+    echo
+}
+
+refresh_banner() {
+    clear
+    show_banner
+}
+
+# ── Help ────────────────────────────────────────────────────────────────────
+show_help() {
+    cat << EOF
+${script_name} - ${small_desc}
+
+Usage:
+
+    ${script_name} [command]
+    ${script_name} [flags]
+
+Available commands:
+
+    lights, lock, unlock, observe, monitor,
+    tree, power, version, help
+
+Flags:
+
+    -v, --version   Show Version Info
+    -h, --help      Show Help
+
+For more info, Run:
+
+    ${script_name} <command> --help
+
+
+EOF
+}
+
+show_light_help() {
+    local cmd_name="lights"
+
+    cat << EOF
+Change Color of RAM LED
+
+Usage:
+
+    ${script_name} ${cmd_name} [Command]
+    ${script_name} ${cmd_name} [Flags]
+
+Available Commands:
+
+    on        Turn on RAM LED
+    off       Turn off RAM LED
+    help      Show Help
+
+Flags:
+
+    -h,       Show Help
+    --help    Show Help
+
+EOF
+}
+
+# ── Subcommand: lights ───────────────────────────────────────────────────────
+cmd_lights() {
+    local cmd_name="lights"
+
+    case "$@" in
+        -h | --help | h | help)
+            show_light_help
+            ;;
+        on | 1)
+            lights_on_helper
+            ;;
+        off | 0)
+            lights_off_helper
+            ;;
+        *)
+            show_light_help
+            ;;
+    esac
+}
+
+# ── Subcommand: lock ─────────────────────────────────────────────────────────
+cmd_lock() {
+    require_ubuntu
+    echo
+    delay_min="${1:-}"
+    if [[ -n "$delay_min" && ! "$delay_min" =~ ^[0-9]+$ ]]; then
+        log_fail "Delay must be a number (minutes)."
+        exit 1
+    fi
+
+    if [[ -n "$delay_min" && "$delay_min" -gt 0 ]]; then
+        log_info "Lock scheduled in ${BORANGE}${delay_min}${RESET} minute(s)..."
+
+        (
+            sleep "$((delay_min * 60))"
+            lock_helper
+        ) > /dev/null 2>&1 &
+        disown
+
+    else
+        log_info "Initializing command..."
+        log_info "Locking Screen..."
+        lock_helper
+        log_info "Command finished successfully"
+    fi
+
+    echo
+}
+
+# ── Subcommand: unlock ───────────────────────────────────────────────────────
+cmd_unlock() {
+    require_ubuntu
+    echo
+    log_info "Initializing command..."
+    log_info "Unlocking Screen..."
+    unlock_helper
+    log_info "Command finished successfully"
+    echo
+}
+
+# =================================================================================
+# == Execution ====================================================================
+# =================================================================================
+case "${1:-}" in
+    v | -v | version | --version)
+        show_version
+        exit 0
+        ;;
+    h | -h | help | --help)
+        show_help
+        exit 0
+        ;;
+esac
+
+SUBCOMMAND="${1:-}"
+shift || true
+
+case "$SUBCOMMAND" in
+    light | lights | ram | rams | led | leds | lt | lts)
+        cmd_lights "$@"
+        exit 0
+        ;;
+    lock)
+        cmd_lock "$@"
+        exit 0
+        ;;
+    unlock)
+        cmd_unlock
+        exit 0
+        ;;
+    observe | monitor)
+        refresh_banner
+        tail -f "$HOME/.local/logs/vault-observer.log"
+        ;;
+    poweroff | power | pwr | shutdown)
+        sudo shutdown now
+        ;;
+    tree | list | lst | ls)
+        tree --gitignore --dirsfirst
+        exit 0
+        ;;
+    *)
+        show_help
+        exit 0
+        ;;
+esac
