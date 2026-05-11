@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.9.1"
+version="1.9.2"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -322,6 +322,12 @@ cmd_unlock() {
     echo
 }
 
+# ── Subcommand: tree ─────────────────────────────────────────────────────────
+cmd_tree() {
+    require_apt_package "tree"
+    tree --gitignore --dirsfirst
+}
+
 # =================================================================================
 # == Execution ====================================================================
 # =================================================================================
@@ -360,8 +366,7 @@ case "$SUBCOMMAND" in
         sudo shutdown now
         ;;
     tree | list | lst | ls)
-        require_apt_package "tree"
-        tree --gitignore --dirsfirst
+        cmd_tree
         exit 0
         ;;
     *)
