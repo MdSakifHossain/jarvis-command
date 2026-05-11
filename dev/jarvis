@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.7.1"
+version="1.7.2"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -55,20 +55,7 @@ require_ubuntu() {
     fi
 }
 
-require_cmd() {
-    local cmd="$1"
-    local pkg="${2:-$1}"
-
-    if ! command -v "$cmd" > /dev/null 2>&1; then
-        echo
-        log_fail "Missing dependency: $cmd
-
-Install it using:
-    sudo apt install $pkg"
-    fi
-}
-
-require_cmd_dbus() {
+require_dbus() {
     command -v dbus-send > /dev/null 2>&1 \
         || log_fail "Missing dependency: dbus-send (package: dbus-x11)"
 }
@@ -84,7 +71,7 @@ require_gnome_screensaver() {
 }
 
 require_gnome_lock() {
-    require_cmd_dbus
+    require_dbus
     require_gnome_screensaver
 }
 
@@ -338,7 +325,6 @@ case "$SUBCOMMAND" in
         sudo shutdown now
         ;;
     tree | list | lst | ls)
-        require_cmd tree
         tree --gitignore --dirsfirst
         exit 0
         ;;
