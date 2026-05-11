@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.4.3"
+version="1.10.0"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -46,6 +46,78 @@ show_divider() { log_clr_l3 "  ━━━━━━━━━━━━━━━━�
 divider_small() { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+require_ubuntu() {
+    source /etc/os-release
+
+    if [[ "$ID" != "ubuntu" ]]; then
+        echo
+        log_fail "This script currently supports Ubuntu only."
+    fi
+}
+
+require_apt_package() {
+    local cmd="$1"
+    local pkg="${2:-$1}"
+
+    if command -v "$cmd" > /dev/null 2>&1; then
+        return 0
+    fi
+
+    echo
+    log_fail "Missing dependency: $cmd
+
+Install it using:
+    sudo apt install $pkg"
+}
+
+require_external_dependency() {
+    local cmd="$1"
+    local message="${2:-No installation instructions provided}"
+
+    if command -v "$cmd" > /dev/null 2>&1; then
+        return 0
+    fi
+
+    echo
+    log_fail "Missing dependency: $cmd
+
+Hint:
+$message"
+}
+
+require_openrgb() {
+    require_external_dependency openrgb "Go to https://openrgb.org/releases.html and instll the 'Linux amd64 (Debian Bookworm .deb)'"
+}
+
+require_dbus() {
+    require_apt_package dbus-send dbus-x11
+}
+
+require_gnome_screensaver() {
+    dbus-send --session \
+        --dest=org.gnome.ScreenSaver \
+        --print-reply \
+        /org/gnome/ScreenSaver \
+        org.gnome.ScreenSaver.GetActive \
+        > /dev/null 2>&1 \
+        || log_fail "Screen lock is not available (GNOME desktop not detected).\n\nTry running this command inside your normal Ubuntu desktop session."
+}
+
+require_gnome_lock() {
+    require_dbus
+    require_gnome_screensaver
+}
+
+require_file() {
+    local path="$1"
+    local description="${2:-Required file}"
+
+    [[ -f "$path" ]] || log_fail "$description not found.
+
+Expected location:
+    $path"
+}
+
 show_version() {
     log_txt_nm "${script_name} v${version}"
 }
@@ -67,6 +139,7 @@ unlock_helper() {
 }
 
 lights_on_helper() {
+    require_openrgb
     echo
     log_info "Turning lights ON..."
     openrgb --mode static --color ffffff > /dev/null 2>&1
@@ -75,6 +148,7 @@ lights_on_helper() {
 }
 
 lights_off_helper() {
+    require_openrgb
     echo
     log_info "Turning lights OFF..."
     openrgb --mode static --color 000000 > /dev/null 2>&1
@@ -220,6 +294,7 @@ cmd_lights() {
 
 # ── Subcommand: lock ─────────────────────────────────────────────────────────
 cmd_lock() {
+    require_gnome_lock
     echo
     delay_min="${1:-}"
     if [[ -n "$delay_min" && ! "$delay_min" =~ ^[0-9]+$ ]]; then
@@ -248,12 +323,29 @@ cmd_lock() {
 
 # ── Subcommand: unlock ───────────────────────────────────────────────────────
 cmd_unlock() {
+    require_gnome_lock
     echo
     log_info "Initializing command..."
     log_info "Unlocking Screen..."
     unlock_helper
     log_info "Command finished successfully"
     echo
+}
+
+# ── Subcommand: tree ─────────────────────────────────────────────────────────
+cmd_tree() {
+    require_apt_package "tree"
+    tree --gitignore --dirsfirst
+}
+
+# ── Subcommand: observe ──────────────────────────────────────────────────────
+cmd_observe_vault_log() {
+    local vault_log_file="$HOME/.local/logs/vault-observer.log"
+
+    require_file "$vault_log_file" "Vault observer log file"
+
+    refresh_banner
+    tail -f "$vault_log_file"
 }
 
 # =================================================================================
@@ -287,14 +379,13 @@ case "$SUBCOMMAND" in
         exit 0
         ;;
     observe | monitor)
-        refresh_banner
-        tail -f "$HOME/.local/logs/vault-observer.log"
+        cmd_observe_vault_log
         ;;
     poweroff | power | pwr | shutdown)
         sudo shutdown now
         ;;
     tree | list | lst | ls)
-        tree --gitignore --dirsfirst
+        cmd_tree
         exit 0
         ;;
     *)
