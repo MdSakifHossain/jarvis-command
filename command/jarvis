@@ -51,7 +51,6 @@ show_version() {
 }
 
 lock_helper() {
-    # here i redirected output to silence
     dbus-send --session --dest=org.gnome.ScreenSaver \
         --type=method_call --print-reply \
         /org/gnome/ScreenSaver \
@@ -60,11 +59,11 @@ lock_helper() {
 }
 
 unlock_helper() {
-    # here i just removed the "--print-reply" from the send lines last portion
     dbus-send --session --dest=org.gnome.ScreenSaver \
-        --type=method_call \
+        --type=method_call --print-reply \
         /org/gnome/ScreenSaver \
-        org.gnome.ScreenSaver.SetActive boolean:false
+        org.gnome.ScreenSaver.SetActive boolean:false \
+        > /dev/null 2>&1
 }
 
 lights_on_helper() {
