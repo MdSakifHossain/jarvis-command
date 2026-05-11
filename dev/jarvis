@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.9.2"
+version="1.10.0"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -106,6 +106,16 @@ require_gnome_screensaver() {
 require_gnome_lock() {
     require_dbus
     require_gnome_screensaver
+}
+
+require_file() {
+    local path="$1"
+    local description="${2:-Required file}"
+
+    [[ -f "$path" ]] || log_fail "$description not found.
+
+Expected location:
+    $path"
 }
 
 show_version() {
@@ -328,6 +338,16 @@ cmd_tree() {
     tree --gitignore --dirsfirst
 }
 
+# ── Subcommand: observe ──────────────────────────────────────────────────────
+cmd_observe_vault_log() {
+    local vault_log_file="$HOME/.local/logs/vault-observer.log"
+
+    require_file "$vault_log_file" "Vault observer log file"
+
+    refresh_banner
+    tail -f "$vault_log_file"
+}
+
 # =================================================================================
 # == Execution ====================================================================
 # =================================================================================
@@ -359,8 +379,7 @@ case "$SUBCOMMAND" in
         exit 0
         ;;
     observe | monitor)
-        refresh_banner
-        tail -f "$HOME/.local/logs/vault-observer.log"
+        cmd_observe_vault_log
         ;;
     poweroff | power | pwr | shutdown)
         sudo shutdown now
