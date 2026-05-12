@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.11.0"
+version="1.11.1"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -118,10 +118,20 @@ Expected location:
     $path"
 }
 
+# check_internet() {
+#     if ! ping -c 1 -W 3 google.com > /dev/null 2>&1; then
+#         log_fail "No internet connection. Connect to WiFi first."
+#     fi
+#     log_ok "Internet connection active"
+# }
+
 check_internet() {
-    if ! ping -c 1 -W 3 google.com > /dev/null 2>&1; then
-        log_fail "No internet connection. Connect to WiFi first."
+    require_apt_package curl
+    if ! curl -s --max-time 5 https://google.com > /dev/null; then
+        log_fail "No internet connection."
+        return 1
     fi
+
     log_ok "Internet connection active"
 }
 
@@ -333,7 +343,6 @@ Example workflow:
 EOF
 }
 
-
 cmd_lights() {
     local cmd_name="lights"
 
@@ -425,7 +434,8 @@ cmd_setup_ubuntu_step_1() {
     firefox \
         "https://github.com/TheAssassin/AppImageLauncher/releases" \
         "https://openrgb.org/releases.html" \
-        > /dev/null 2>&1 & disown
+        > /dev/null 2>&1 &
+    disown
     log_ok "Firefox opened with 2 tabs"
 
     echo
@@ -504,35 +514,59 @@ cmd_setup_ubuntu_step_2() {
     echo
 
     log_info "Installing Brave..."
-    sudo snap install brave || { log_warn "Brave snap failed"; _snap_warns+=("Brave"); }
+    sudo snap install brave || {
+        log_warn "Brave snap failed"
+        _snap_warns+=("Brave")
+    }
     log_ok "Brave installed"
 
     log_info "Installing Chromium..."
-    sudo snap install chromium || { log_warn "Chromium snap failed"; _snap_warns+=("Chromium"); }
+    sudo snap install chromium || {
+        log_warn "Chromium snap failed"
+        _snap_warns+=("Chromium")
+    }
     log_ok "Chromium installed"
 
     log_info "Installing Opera..."
-    sudo snap install opera || { log_warn "Opera snap failed"; _snap_warns+=("Opera"); }
+    sudo snap install opera || {
+        log_warn "Opera snap failed"
+        _snap_warns+=("Opera")
+    }
     log_ok "Opera installed"
 
     log_info "Installing Firefox..."
-    sudo snap install firefox || { log_warn "Firefox snap failed"; _snap_warns+=("Firefox"); }
+    sudo snap install firefox || {
+        log_warn "Firefox snap failed"
+        _snap_warns+=("Firefox")
+    }
     log_ok "Firefox installed"
 
     log_info "Installing Obsidian..."
-    sudo snap install obsidian --classic || { log_warn "Obsidian snap failed"; _snap_warns+=("Obsidian"); }
+    sudo snap install obsidian --classic || {
+        log_warn "Obsidian snap failed"
+        _snap_warns+=("Obsidian")
+    }
     log_ok "Obsidian installed"
 
     log_info "Installing OBS Studio..."
-    sudo snap install obs-studio || { log_warn "OBS Studio snap failed"; _snap_warns+=("OBS Studio"); }
+    sudo snap install obs-studio || {
+        log_warn "OBS Studio snap failed"
+        _snap_warns+=("OBS Studio")
+    }
     log_ok "OBS Studio installed"
 
     log_info "Installing VLC..."
-    sudo snap install vlc || { log_warn "VLC snap failed"; _snap_warns+=("VLC"); }
+    sudo snap install vlc || {
+        log_warn "VLC snap failed"
+        _snap_warns+=("VLC")
+    }
     log_ok "VLC installed"
 
     log_info "Installing qBittorrent..."
-    sudo snap install qbittorrent-arnatious || { log_warn "qBittorrent snap failed"; _snap_warns+=("qBittorrent"); }
+    sudo snap install qbittorrent-arnatious || {
+        log_warn "qBittorrent snap failed"
+        _snap_warns+=("qBittorrent")
+    }
     log_ok "qBittorrent installed"
 
     log_ok "Snap installations complete"
@@ -543,13 +577,13 @@ cmd_setup_ubuntu_step_2() {
     echo
 
     log_info "Adding Microsoft GPG key..."
-    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | \
-        sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+    wget -qO- https://packages.microsoft.com/keys/microsoft.asc \
+        | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
     log_ok "Microsoft key added"
 
     log_info "Adding VSCode apt repository..."
-    echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | \
-        sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+    echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
+        | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
     log_ok "VSCode repo added"
 
     log_info "Installing VSCode..."
@@ -614,8 +648,8 @@ cmd_setup_ubuntu_step_2() {
     while IFS= read -r -d '' deb; do
         log_info "Installing: $(basename "$deb")"
         sudo apt install -y "$deb" || log_warn "Failed: $(basename "$deb")"
-        (( _deb_count++ )) || true
-    done < <(find "$HOME/Downloads" -maxdepth 1 -name "*.deb" -print0 2>/dev/null)
+        ((_deb_count++)) || true
+    done < <(find "$HOME/Downloads" -maxdepth 1 -name "*.deb" -print0 2> /dev/null)
 
     if [[ "$_deb_count" -eq 0 ]]; then
         _deb_warn=true
@@ -724,7 +758,6 @@ cmd_setup_ubuntu_step_3() {
     exit 0
 }
 
-
 case "${1:-}" in
     v | -v | version | --version)
         show_version
@@ -770,17 +803,26 @@ case "$SUBCOMMAND" in
             step)
                 _su_num="${1:-}"
                 case "$_su_num" in
-                    1 | one)   cmd_setup_ubuntu_step_1 ;;
-                    2 | two)   cmd_setup_ubuntu_step_2 ;;
+                    1 | one) cmd_setup_ubuntu_step_1 ;;
+                    2 | two) cmd_setup_ubuntu_step_2 ;;
                     3 | three) cmd_setup_ubuntu_step_3 ;;
-                    *)         show_setup_ubuntu_help; exit 0 ;;
+                    *)
+                        show_setup_ubuntu_help
+                        exit 0
+                        ;;
                 esac
                 ;;
             1) cmd_setup_ubuntu_step_1 ;;
             2) cmd_setup_ubuntu_step_2 ;;
             3) cmd_setup_ubuntu_step_3 ;;
-            help | h) show_setup_ubuntu_help; exit 0 ;;
-            *)        show_setup_ubuntu_help; exit 0 ;;
+            help | h)
+                show_setup_ubuntu_help
+                exit 0
+                ;;
+            *)
+                show_setup_ubuntu_help
+                exit 0
+                ;;
         esac
         ;;
     *)
