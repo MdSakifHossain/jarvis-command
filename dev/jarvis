@@ -1,0 +1,790 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# ── Identity ──────────────────────────────────────────────────────────────────
+script_name="$(basename "$0")"
+small_desc="Personal CLI Tool"
+version="1.11.0"
+
+# ── Colors ────────────────────────────────────────────────────────────────────
+RESET='\033[0m'
+BOLD='\033[1m'
+DIM='\033[2m'
+ORANGE='\033[38;5;209m'
+BORANGE='\033[1;38;5;209m'
+DIM_ORANGE='\033[2;38;5;209m'
+BWHITE='\033[1;37m'
+BGREEN='\033[1;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[94m'
+BBLUE='\033[1;94m'
+
+# ── Color helpers ─────────────────────────────────────────────────────────────
+log_clr_l1() { echo -e "${ORANGE}${1}${RESET}"; }
+log_clr_l2() { echo -e "${BORANGE}${1}${RESET}"; }
+log_clr_l3() { echo -e "${DIM_ORANGE}${1}${RESET}"; }
+
+# ── Text helpers ──────────────────────────────────────────────────────────────
+log_txt_nm() { echo -e "${1}"; }
+log_txt_bd() { echo -e "${BOLD}${1}${RESET}"; }
+log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
+
+# ── Semantic logging ──────────────────────────────────────────────────────────
+log_info() { log_txt_nm "${BLUE}[INFO]${RESET} $*"; }
+log_ok() { echo -e "  ${BGREEN}✔${RESET}  $*"; }
+log_warn() { echo -e "  ${YELLOW}⚠${RESET}  $*"; }
+log_fail() {
+    log_txt_nm "${RED}[ERROR]${RESET} $* \n" >&2
+    exit 1
+}
+log_label() { echo -e "  ${BORANGE}▸${RESET}  ${BWHITE}$*${RESET}"; }
+
+# ── UI helpers ────────────────────────────────────────────────────────────────
+show_divider() { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+divider_small() { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+require_ubuntu() {
+    source /etc/os-release
+
+    if [[ "$ID" != "ubuntu" ]]; then
+        echo
+        log_fail "This script currently supports Ubuntu only."
+    fi
+}
+
+require_apt_package() {
+    local cmd="$1"
+    local pkg="${2:-$1}"
+
+    if command -v "$cmd" > /dev/null 2>&1; then
+        return 0
+    fi
+
+    echo
+    log_fail "Missing dependency: $cmd
+
+Install it using:
+    sudo apt install $pkg"
+}
+
+require_external_dependency() {
+    local cmd="$1"
+    local message="${2:-No installation instructions provided}"
+
+    if command -v "$cmd" > /dev/null 2>&1; then
+        return 0
+    fi
+
+    echo
+    log_fail "Missing dependency: $cmd
+
+Hint:
+$message"
+}
+
+require_openrgb() {
+    require_external_dependency openrgb "Go to https://openrgb.org/releases.html and instll the 'Linux amd64 (Debian Bookworm .deb)'"
+}
+
+require_dbus() {
+    require_apt_package dbus-send dbus-x11
+}
+
+require_gnome_screensaver() {
+    dbus-send --session \
+        --dest=org.gnome.ScreenSaver \
+        --print-reply \
+        /org/gnome/ScreenSaver \
+        org.gnome.ScreenSaver.GetActive \
+        > /dev/null 2>&1 \
+        || log_fail "Screen lock is not available (GNOME desktop not detected).\n\nTry running this command inside your normal Ubuntu desktop session."
+}
+
+require_gnome_lock() {
+    require_dbus
+    require_gnome_screensaver
+}
+
+require_file() {
+    local path="$1"
+    local description="${2:-Required file}"
+
+    [[ -f "$path" ]] || log_fail "$description not found.
+
+Expected location:
+    $path"
+}
+
+check_internet() {
+    if ! ping -c 1 -W 3 google.com > /dev/null 2>&1; then
+        log_fail "No internet connection. Connect to WiFi first."
+    fi
+    log_ok "Internet connection active"
+}
+
+ensure_dir() {
+    local path="$1"
+    if [[ ! -d "$path" ]]; then
+        mkdir -p "$path"
+        log_ok "Created directory: $path"
+    fi
+}
+
+show_version() {
+    log_txt_nm "${script_name} v${version}"
+}
+
+lock_helper() {
+    dbus-send --session --dest=org.gnome.ScreenSaver \
+        --type=method_call --print-reply \
+        /org/gnome/ScreenSaver \
+        org.gnome.ScreenSaver.Lock \
+        > /dev/null 2>&1
+}
+
+unlock_helper() {
+    dbus-send --session --dest=org.gnome.ScreenSaver \
+        --type=method_call --print-reply \
+        /org/gnome/ScreenSaver \
+        org.gnome.ScreenSaver.SetActive boolean:false \
+        > /dev/null 2>&1
+}
+
+lights_on_helper() {
+    require_openrgb
+    echo
+    log_info "Turning lights ON..."
+    openrgb --mode static --color ffffff > /dev/null 2>&1
+    log_info "Command execution Completed"
+    echo
+}
+
+lights_off_helper() {
+    require_openrgb
+    echo
+    log_info "Turning lights OFF..."
+    openrgb --mode static --color 000000 > /dev/null 2>&1
+    log_info "Command execution Completed"
+    echo
+}
+
+# ── Banner ────────────────────────────────────────────────────────────────────
+show_banner_1() {
+    echo
+    log_clr_l2 "    _      __      __                      "
+    log_clr_l2 "   | | /| / /___  / /____ ___   __ _  ___  "
+    log_clr_l2 "   | |/ |/ // -_)/ // __// _ \ /  ' \/ -_) "
+    log_clr_l2 "   |__/|__/ \__//_/ \__/ \___//_/_/_/\__/  "
+    log_clr_l2 "     ___              __      ____ _       "
+    log_clr_l2 "    / _ ) ___ _ ____ / /__   / __/(_)____  "
+    log_clr_l2 "   / _  |/ _ '// __//  '_/  _\ \ / // __/_ "
+    log_clr_l2 "  /____/ \_,_/ \__//_/\_\  /___//_//_/  (_)"
+    echo
+}
+
+show_banner_2() {
+    echo
+    log_clr_l2 "  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗"
+    log_clr_l2 "  ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝"
+    log_clr_l2 "  ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  "
+    log_clr_l1 "  ██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝  "
+    log_clr_l1 "  ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗"
+    log_clr_l3 "   ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝"
+    echo
+    log_clr_l2 "  ██████╗  █████╗  ██████╗██╗  ██╗    ███████╗██╗██████╗        "
+    log_clr_l2 "  ██╔══██╗██╔══██╗██╔════╝██║ ██╔╝    ██╔════╝██║██╔══██╗       "
+    log_clr_l2 "  ██████╔╝███████║██║     █████╔╝     ███████╗██║██████╔╝       "
+    log_clr_l1 "  ██╔══██╗██╔══██║██║     ██╔═██╗     ╚════██║██║██╔══██╗       "
+    log_clr_l1 "  ██████╔╝██║  ██║╚██████╗██║  ██╗    ███████║██║██║  ██║██╗    "
+    log_clr_l3 "  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝    ╚══════╝╚═╝╚═╝  ╚═╝╚═╝    "
+    echo
+}
+
+show_banner() {
+    current_width=$(tput cols 2> /dev/null || echo 80) # Get current terminal width
+    cutoff_width=60                                    # Define what counts as "small"
+
+    is_small=false
+    if [ "$current_width" -lt "$cutoff_width" ]; then
+        is_small=true
+    fi
+
+    if $is_small; then
+        show_banner_1
+    else
+        show_banner_2
+    fi
+
+    log_txt_dm "  Type \"${script_name} --help\" for more details."
+
+    if $is_small; then
+        divider_small
+    else
+        show_divider
+    fi
+
+    echo
+}
+
+refresh_banner() {
+    clear
+    show_banner
+}
+
+# ── Help ────────────────────────────────────────────────────────────────────
+show_help() {
+    cat << EOF
+${script_name} - ${small_desc}
+
+Usage:
+
+    ${script_name} [command]
+    ${script_name} [flags]
+
+Available commands:
+
+    lights, lock, unlock, observe, monitor,
+    tree, power, version, setup-ubuntu, help
+
+Flags:
+
+    -v, --version   Show Version Info
+    -h, --help      Show Help
+
+For more info, Run:
+
+    ${script_name} <command> --help
+
+
+EOF
+}
+
+show_light_help() {
+    local cmd_name="lights"
+
+    cat << EOF
+Change Color of RAM LED
+
+Usage:
+
+    ${script_name} ${cmd_name} [Command]
+    ${script_name} ${cmd_name} [Flags]
+
+Available Commands:
+
+    on        Turn on RAM LED
+    off       Turn off RAM LED
+    help      Show Help
+
+Flags:
+
+    -h,       Show Help
+    --help    Show Help
+
+EOF
+}
+
+show_setup_ubuntu_help() {
+    cat << EOF
+${script_name} setup-ubuntu — Fresh Ubuntu Setup Wizard
+
+Usage:
+    ${script_name} setup-ubuntu step 1    Prepare: open browser tabs for manual downloads
+    ${script_name} setup-ubuntu step 2    Build: run full automated setup
+    ${script_name} setup-ubuntu step 3    Looks: configure themes and appearance
+    ${script_name} setup-ubuntu help      Show this help
+
+What each step does:
+
+  Step 1 (PREP) — You do this:
+    • Opens Firefox with download pages for AppImageLauncher & OpenRGB
+    • Shows a checklist of what .deb files to save to ~/Downloads
+    • When done, run Step 2
+
+  Step 2 (BUILD) — The computer does everything:
+    • Updates & upgrades the system
+    • Installs all CLI tools, snaps, VSCode, Chrome, Node.js
+    • Sets up SSH server + allows SSH through firewall
+    • Installs any .deb files found in ~/Downloads
+    • Creates auto-lock and RGB-off systemd services
+    • Logs EVERYTHING to ~/.local/logs/
+
+  Step 3 (LOOKS) — Coming soon:
+    • VSCode minimal theme
+    • Terminal fonts and styling
+    • Ubuntu themes, icons, cursors
+
+Safety:
+    • Checks you're on Ubuntu and have internet before touching anything
+    • Every action is logged with a timestamp
+    • Shows [OK] or [WARN] for each step so you know what happened
+
+Example workflow:
+    ${script_name} setup-ubuntu step 1
+    # ...download 2 .deb files in Firefox...
+    ${script_name} setup-ubuntu step 2
+    # ...wait 5-10 minutes, everything installs...
+    ${script_name} setup-ubuntu step 3
+    # ...when it's ready...
+
+EOF
+}
+
+
+cmd_lights() {
+    local cmd_name="lights"
+
+    case "$@" in
+        -h | --help | h | help)
+            show_light_help
+            ;;
+        on | 1)
+            lights_on_helper
+            ;;
+        off | 0)
+            lights_off_helper
+            ;;
+        *)
+            show_light_help
+            ;;
+    esac
+}
+
+# ── Subcommand: lock ─────────────────────────────────────────────────────────
+cmd_lock() {
+    require_gnome_lock
+    echo
+    delay_min="${1:-}"
+    if [[ -n "$delay_min" && ! "$delay_min" =~ ^[0-9]+$ ]]; then
+        log_fail "Delay must be a number (minutes)."
+        exit 1
+    fi
+
+    if [[ -n "$delay_min" && "$delay_min" -gt 0 ]]; then
+        log_info "Lock scheduled in ${BORANGE}${delay_min}${RESET} minute(s)..."
+
+        (
+            sleep "$((delay_min * 60))"
+            lock_helper
+        ) > /dev/null 2>&1 &
+        disown
+
+    else
+        log_info "Initializing command..."
+        log_info "Locking Screen..."
+        lock_helper
+        log_info "Command finished successfully"
+    fi
+
+    echo
+}
+
+# ── Subcommand: unlock ───────────────────────────────────────────────────────
+cmd_unlock() {
+    require_gnome_lock
+    echo
+    log_info "Initializing command..."
+    log_info "Unlocking Screen..."
+    unlock_helper
+    log_info "Command finished successfully"
+    echo
+}
+
+# ── Subcommand: tree ─────────────────────────────────────────────────────────
+cmd_tree() {
+    require_apt_package "tree"
+    tree --gitignore --dirsfirst
+}
+
+# ── Subcommand: observe ──────────────────────────────────────────────────────
+cmd_observe_vault_log() {
+    local vault_log_file="$HOME/.local/logs/vault-observer.log"
+
+    require_file "$vault_log_file" "Vault observer log file"
+
+    refresh_banner
+    tail -f "$vault_log_file"
+}
+
+# ── Subcommand: setup-ubuntu — Step 1 ───────────────────────────────────────
+cmd_setup_ubuntu_step_1() {
+    echo
+    log_clr_l2 "  ╔══════════════════════════════════════════════════════════════╗"
+    log_clr_l2 "  ║         FRESH UBUNTU SETUP  —  STEP 1: PREP                 ║"
+    log_clr_l2 "  ╚══════════════════════════════════════════════════════════════╝"
+    echo
+
+    require_ubuntu
+    check_internet
+
+    echo
+    log_info "Opening Firefox with download pages..."
+    firefox \
+        "https://github.com/TheAssassin/AppImageLauncher/releases" \
+        "https://openrgb.org/releases.html" \
+        > /dev/null 2>&1 & disown
+    log_ok "Firefox opened with 2 tabs"
+
+    echo
+    log_clr_l2 "  📋 Download Checklist:"
+    log_label "AppImageLauncher  →  appimagelauncher_*-bionic_amd64.deb"
+    log_label "OpenRGB           →  openrgb_*_amd64_bookworm.deb"
+    log_txt_dm "  Save both files to: ~/Downloads"
+
+    echo
+    show_divider
+    log_clr_l1 "  Next:"
+    log_txt_dm "      ${script_name} setup-ubuntu step 2     (after downloads are done)"
+    echo
+
+    exit 0
+}
+
+# ── Subcommand: setup-ubuntu — Step 2 ───────────────────────────────────────
+cmd_setup_ubuntu_step_2() {
+    echo
+    log_clr_l2 "  ╔══════════════════════════════════════════════════════════════╗"
+    log_clr_l2 "  ║         FRESH UBUNTU SETUP  —  STEP 2: BUILD                ║"
+    log_clr_l2 "  ╚══════════════════════════════════════════════════════════════╝"
+    echo
+
+    require_ubuntu
+    check_internet
+
+    # ── Logging setup ────────────────────────────────────────────────────────
+    ensure_dir "$HOME/.local/logs"
+    LOGFILE="$HOME/.local/logs/jarvis-setup-$(date +%Y%m%d-%H%M%S).log"
+    exec > >(tee -a "$LOGFILE") 2>&1
+
+    log_info "Log file: $LOGFILE"
+    echo
+
+    # ── Track summary state ──────────────────────────────────────────────────
+    _node_ver=""
+    _npm_ver=""
+    _ssh_ip=""
+    _deb_count=0
+    _deb_warn=false
+    _snap_warns=()
+
+    # ── Phase 2A — System Foundation ─────────────────────────────────────────
+    log_clr_l1 "  ┌─ [2A] System Foundation ───────────────────────────────────┐"
+    echo
+
+    log_info "Updating package lists..."
+    sudo apt update -y
+    log_ok "apt update complete"
+
+    log_info "Upgrading packages..."
+    sudo apt upgrade -y
+    log_ok "apt upgrade complete"
+
+    log_info "Creating user directories..."
+    ensure_dir "$HOME/.themes"
+    ensure_dir "$HOME/.icons"
+    ensure_dir "$HOME/.fonts"
+    ensure_dir "$HOME/.config/systemd/user"
+    log_ok "User directories ready"
+
+    log_info "Installing core CLI tools..."
+    sudo apt-get install -y \
+        git curl gnome-tweaks gnome-shell-extension-manager \
+        wget apt-transport-https software-properties-common \
+        ca-certificates gnupg lsb-release \
+        openssh-server ufw tree
+    log_ok "Core tools installed"
+
+    echo
+
+    # ── Phase 2B — Snap Applications ─────────────────────────────────────────
+    log_clr_l1 "  ┌─ [2B] Snap Applications ───────────────────────────────────┐"
+    echo
+
+    log_info "Installing Brave..."
+    sudo snap install brave || { log_warn "Brave snap failed"; _snap_warns+=("Brave"); }
+    log_ok "Brave installed"
+
+    log_info "Installing Chromium..."
+    sudo snap install chromium || { log_warn "Chromium snap failed"; _snap_warns+=("Chromium"); }
+    log_ok "Chromium installed"
+
+    log_info "Installing Opera..."
+    sudo snap install opera || { log_warn "Opera snap failed"; _snap_warns+=("Opera"); }
+    log_ok "Opera installed"
+
+    log_info "Installing Firefox..."
+    sudo snap install firefox || { log_warn "Firefox snap failed"; _snap_warns+=("Firefox"); }
+    log_ok "Firefox installed"
+
+    log_info "Installing Obsidian..."
+    sudo snap install obsidian --classic || { log_warn "Obsidian snap failed"; _snap_warns+=("Obsidian"); }
+    log_ok "Obsidian installed"
+
+    log_info "Installing OBS Studio..."
+    sudo snap install obs-studio || { log_warn "OBS Studio snap failed"; _snap_warns+=("OBS Studio"); }
+    log_ok "OBS Studio installed"
+
+    log_info "Installing VLC..."
+    sudo snap install vlc || { log_warn "VLC snap failed"; _snap_warns+=("VLC"); }
+    log_ok "VLC installed"
+
+    log_info "Installing qBittorrent..."
+    sudo snap install qbittorrent-arnatious || { log_warn "qBittorrent snap failed"; _snap_warns+=("qBittorrent"); }
+    log_ok "qBittorrent installed"
+
+    log_ok "Snap installations complete"
+    echo
+
+    # ── Phase 2C — VSCode ─────────────────────────────────────────────────────
+    log_clr_l1 "  ┌─ [2C] VSCode (Microsoft Apt Repo) ─────────────────────────┐"
+    echo
+
+    log_info "Adding Microsoft GPG key..."
+    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | \
+        sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+    log_ok "Microsoft key added"
+
+    log_info "Adding VSCode apt repository..."
+    echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | \
+        sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+    log_ok "VSCode repo added"
+
+    log_info "Installing VSCode..."
+    sudo apt update -y
+    sudo apt install -y code
+    log_ok "VSCode installed: $(code --version | head -1)"
+    echo
+
+    # ── Phase 2D — Google Chrome ──────────────────────────────────────────────
+    log_clr_l1 "  ┌─ [2D] Google Chrome ────────────────────────────────────────┐"
+    echo
+
+    log_info "Downloading Chrome..."
+    wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" \
+        -O "/tmp/google-chrome-stable_current_amd64.deb"
+    log_ok "Chrome .deb downloaded"
+
+    log_info "Installing Chrome (auto-adds update repo)..."
+    sudo apt install -y "/tmp/google-chrome-stable_current_amd64.deb"
+    rm -f "/tmp/google-chrome-stable_current_amd64.deb"
+    log_ok "Chrome installed with auto-updates"
+    echo
+
+    # ── Phase 2E — Node.js ────────────────────────────────────────────────────
+    log_clr_l1 "  ┌─ [2E] Node.js (NodeSource) ─────────────────────────────────┐"
+    echo
+
+    log_info "Adding NodeSource repository..."
+    curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+    log_ok "NodeSource repo configured"
+
+    log_info "Installing Node.js..."
+    sudo apt install -y nodejs
+    _node_ver="$(node -v)"
+    _npm_ver="$(npm -v)"
+    log_ok "Node.js ${_node_ver} + npm ${_npm_ver} installed"
+    echo
+
+    # ── Phase 2F — SSH Server & Firewall ──────────────────────────────────────
+    log_clr_l1 "  ┌─ [2F] SSH Server & Firewall ────────────────────────────────┐"
+    echo
+
+    log_info "Enabling SSH..."
+    sudo systemctl enable ssh
+    sudo systemctl start ssh
+    log_ok "SSH service: $(systemctl is-active ssh)"
+
+    _ssh_ip="$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -1)"
+
+    log_info "Allowing SSH through firewall..."
+    sudo ufw allow ssh
+    log_ok "SSH allowed through firewall"
+
+    log_clr_l2 "  🔐 SSH ready: ssh $(whoami)@${_ssh_ip}"
+    echo
+
+    # ── Phase 2G — Install .deb files from ~/Downloads ────────────────────────
+    log_clr_l1 "  ┌─ [2G] Custom .deb Packages ─────────────────────────────────┐"
+    echo
+
+    _deb_count=0
+    while IFS= read -r -d '' deb; do
+        log_info "Installing: $(basename "$deb")"
+        sudo apt install -y "$deb" || log_warn "Failed: $(basename "$deb")"
+        (( _deb_count++ )) || true
+    done < <(find "$HOME/Downloads" -maxdepth 1 -name "*.deb" -print0 2>/dev/null)
+
+    if [[ "$_deb_count" -eq 0 ]]; then
+        _deb_warn=true
+        log_warn "No .deb files in ~/Downloads"
+        log_warn "If you need AppImageLauncher/OpenRGB, run: ${script_name} setup-ubuntu step 1"
+    else
+        log_ok "${_deb_count} .deb file(s) installed"
+    fi
+    echo
+
+    # ── Phase 2H — Systemd User Services ─────────────────────────────────────
+    log_clr_l1 "  ┌─ [2H] Systemd User Services ────────────────────────────────┐"
+    echo
+
+    cat > "$HOME/.config/systemd/user/autolock-session.service" << 'SVCEOF'
+[Unit]
+Description=Auto-lock session after login delay
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'sleep 3 && loginctl lock-session'
+
+[Install]
+WantedBy=default.target
+SVCEOF
+    log_ok "Created: autolock-session.service"
+
+    cat > "$HOME/.config/systemd/user/openrgb-off.service" << 'SVCEOF'
+[Unit]
+Description=Turn off RAM RGB after login
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'sleep 5 && openrgb --mode static --color 000000 > /dev/null'
+
+[Install]
+WantedBy=default.target
+SVCEOF
+    log_ok "Created: openrgb-off.service"
+
+    log_info "Registering with systemd..."
+    systemctl --user daemon-reload
+    systemctl --user enable autolock-session.service
+    systemctl --user enable openrgb-off.service
+    log_ok "Services registered (activate on next login)"
+    echo
+
+    # ── Final Summary ─────────────────────────────────────────────────────────
+    show_divider
+    log_clr_l2 "  ✅ STEP 2 COMPLETE — Here's what happened:"
+    echo
+    log_ok "System updated & upgraded"
+    log_ok "Core tools: git, curl, gnome-tweaks, ssh, ufw, tree"
+    log_ok "Browsers: Brave, Chromium, Opera, Firefox (snap)"
+    log_ok "Apps: Obsidian, OBS Studio, VLC, qBittorrent (snap)"
+    log_ok "VSCode: installed + official repo for updates"
+    log_ok "Chrome: installed + auto-update repo"
+    log_ok "Node.js: ${_node_ver} + npm ${_npm_ver}"
+    log_ok "SSH server: active on $(whoami)@${_ssh_ip}"
+    log_ok "Firewall: SSH rule added (UFW stays inactive)"
+    log_ok "Auto-lock: 3-second delay after login"
+    log_ok "RGB-off: 5-second delay after login"
+
+    if [[ "$_deb_warn" == true ]]; then
+        log_warn "Custom .debs: none found in ~/Downloads"
+    else
+        log_ok "Custom .debs: ${_deb_count} installed"
+    fi
+
+    if [[ "${#_snap_warns[@]}" -gt 0 ]]; then
+        for sw in "${_snap_warns[@]}"; do
+            log_warn "Snap failed: $sw (retry manually with: sudo snap install)"
+        done
+    fi
+
+    echo
+    log_txt_dm "  📁 Full log: $LOGFILE"
+    echo
+    log_clr_l1 "  Next:"
+    log_txt_dm "      ${script_name} setup-ubuntu step 3     (when it's ready)"
+    echo
+
+    exit 0
+}
+
+# ── Subcommand: setup-ubuntu — Step 3 ───────────────────────────────────────
+cmd_setup_ubuntu_step_3() {
+    echo
+    log_clr_l2 "  ╔══════════════════════════════════════════════════════════════╗"
+    log_clr_l2 "  ║         FRESH UBUNTU SETUP  —  STEP 3: LOOKS                ║"
+    log_clr_l2 "  ╚══════════════════════════════════════════════════════════════╝"
+    echo
+
+    log_warn "This step is not built yet."
+    echo
+    log_txt_nm "  It will handle:"
+    log_label "VSCode minimal theme and settings"
+    log_label "Terminal fonts and styling"
+    log_label "Ubuntu themes, icons, cursors"
+    echo
+    log_txt_dm "  For now, your system is fully functional after Step 2."
+    echo
+
+    exit 0
+}
+
+
+case "${1:-}" in
+    v | -v | version | --version)
+        show_version
+        exit 0
+        ;;
+    h | -h | help | --help)
+        show_help
+        exit 0
+        ;;
+esac
+
+SUBCOMMAND="${1:-}"
+shift || true
+
+case "$SUBCOMMAND" in
+    light | lights | ram | rams | led | leds | lt | lts)
+        cmd_lights "$@"
+        exit 0
+        ;;
+    lock)
+        cmd_lock "$@"
+        exit 0
+        ;;
+    unlock)
+        cmd_unlock
+        exit 0
+        ;;
+    observe | monitor)
+        cmd_observe_vault_log
+        ;;
+    poweroff | power | pwr | shutdown)
+        sudo shutdown now
+        ;;
+    tree | list | lst | ls)
+        cmd_tree
+        exit 0
+        ;;
+    setup-ubuntu | setup_ubuntu | setupubuntu)
+        _su_step="${1:-}"
+        shift || true
+
+        case "$_su_step" in
+            step)
+                _su_num="${1:-}"
+                case "$_su_num" in
+                    1 | one)   cmd_setup_ubuntu_step_1 ;;
+                    2 | two)   cmd_setup_ubuntu_step_2 ;;
+                    3 | three) cmd_setup_ubuntu_step_3 ;;
+                    *)         show_setup_ubuntu_help; exit 0 ;;
+                esac
+                ;;
+            1) cmd_setup_ubuntu_step_1 ;;
+            2) cmd_setup_ubuntu_step_2 ;;
+            3) cmd_setup_ubuntu_step_3 ;;
+            help | h) show_setup_ubuntu_help; exit 0 ;;
+            *)        show_setup_ubuntu_help; exit 0 ;;
+        esac
+        ;;
+    *)
+        show_help
+        exit 0
+        ;;
+esac
