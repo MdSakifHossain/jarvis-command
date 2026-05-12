@@ -41,8 +41,8 @@ Built as a learning project to understand how custom system commands are structu
 
 ```bash
 sudo apt update && sudo apt install git curl -y \
-git clone <this-repo> \
-cd <this-repo> \
+git clone https://github.com/MdSakifHossain/jarvis-command \
+cd jarvis-command \
 chmod +x installer.sh \
 ./installer.sh install -y
 ```
