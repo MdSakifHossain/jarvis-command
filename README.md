@@ -40,9 +40,10 @@ Built as a learning project to understand how custom system commands are structu
 ### Quick Install
 
 ```bash
-git clone <this-repo>
-cd <this-repo>
-chmod +x installer.sh
+sudo apt update && sudo apt install git curl -y \
+git clone <this-repo> \
+cd <this-repo> \
+chmod +x installer.sh \
 ./installer.sh install -y
 ```
 
