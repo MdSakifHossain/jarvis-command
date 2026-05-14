@@ -766,16 +766,15 @@ cmd_setup_ubuntu_step_3() {
     echo
 
     log_info "Adding Cloudflare GPG key..."
-    curl -fsSL https://pkg.cloudflareclient.com/cloudflare-release.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloudflare-client.gpg
+    curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
     log_ok "Cloudflare key added"
 
     log_info "Adding Cloudflare apt repository..."
-    echo "deb [signed-by=/usr/share/keyrings/cloudflare-client.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list > /dev/null
+    echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list > /dev/null
     log_ok "Cloudflare repo added"
 
     log_info "Installing WARP client..."
-    sudo apt update -y
-    sudo apt install -y cloudflare-warp
+    sudo apt-get update && sudo apt-get install cloudflare-warp
     log_ok "WARP client installed"
 
     log_warn "WARP requires manual registration: run 'warp-cli register' and login via browser"
@@ -876,18 +875,20 @@ VSCODEOF
         "https://github.com/login" \
         "https://x.com" \
         "https://web.programming-hero.com/dashboard" \
-        &>/dev/null & disown || \
-    snap run brave --new-window \
-        "https://pass.proton.me" \
-        "https://accounts.google.com" \
-        "https://web.whatsapp.com" \
-        "https://www.instagram.com" \
-        "https://www.facebook.com" \
-        "https://web.telegram.org/a" \
-        "https://github.com/login" \
-        "https://x.com" \
-        "https://web.programming-hero.com/dashboard" \
-        &>/dev/null & disown
+        &> /dev/null &
+    disown \
+        || snap run brave --new-window \
+            "https://pass.proton.me" \
+            "https://accounts.google.com" \
+            "https://web.whatsapp.com" \
+            "https://www.instagram.com" \
+            "https://www.facebook.com" \
+            "https://web.telegram.org/a" \
+            "https://github.com/login" \
+            "https://x.com" \
+            "https://web.programming-hero.com/dashboard" \
+            &> /dev/null &
+    disown
     log_ok "Brave opened with 9 tabs"
     echo
 
