@@ -44,7 +44,8 @@ sudo apt update && sudo apt install git curl -y &&
 git clone https://github.com/MdSakifHossain/jarvis-command &&
 cd jarvis-command &&
 chmod +x installer.sh &&
-./installer.sh install -y
+./installer.sh install -y &&
+jarvis setup-ubuntu step 1
 ```
 
 ### Manual Install
