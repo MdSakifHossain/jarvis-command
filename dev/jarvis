@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.12.1"
+version="1.12.2"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -774,7 +774,7 @@ cmd_setup_ubuntu_step_3() {
     log_ok "Cloudflare repo added"
 
     log_info "Installing WARP client..."
-    sudo apt-get update && sudo apt-get install cloudflare-warp
+    sudo apt-get update && sudo apt-get install cloudflare-warp -y
     log_ok "WARP client installed"
 
     log_warn "WARP requires manual registration: run 'warp-cli register' and login via browser"
