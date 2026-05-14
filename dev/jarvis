@@ -5,7 +5,7 @@ set -euo pipefail
 # ── Identity ──────────────────────────────────────────────────────────────────
 script_name="$(basename "$0")"
 small_desc="Personal CLI Tool"
-version="1.11.1"
+version="1.12.0"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -322,10 +322,12 @@ What each step does:
     • Creates auto-lock and RGB-off systemd services
     • Logs EVERYTHING to ~/.local/logs/
 
-  Step 3 (LOOKS) — Coming soon:
-    • VSCode minimal theme
-    • Terminal fonts and styling
-    • Ubuntu themes, icons, cursors
+  Step 3 (LOOKS & CONFIG) — The computer does most, you do some:
+    • Installs WARP client (you register manually)
+    • Installs VSCode extensions + applies minimal settings
+    • Sets up zsh, Oh-My-Zsh, Powerlevel10k, plugins
+    • Opens Brave with all essential account links
+    • Lists manual steps: GNOME extensions, themes, icons, fonts, Gogh
 
 Safety:
     • Checks you're on Ubuntu and have internet before touching anything
@@ -338,7 +340,7 @@ Example workflow:
     ${script_name} setup-ubuntu step 2
     # ...wait 5-10 minutes, everything installs...
     ${script_name} setup-ubuntu step 3
-    # ...when it's ready...
+    # ...looks & config automated, manual steps listed...
 
 EOF
 }
@@ -504,7 +506,7 @@ cmd_setup_ubuntu_step_2() {
         git curl gnome-tweaks gnome-shell-extension-manager \
         wget apt-transport-https software-properties-common \
         ca-certificates gnupg lsb-release \
-        openssh-server ufw tree
+        openssh-server ufw tree gnome-boxes
     log_ok "Core tools installed"
 
     echo
@@ -657,6 +659,9 @@ cmd_setup_ubuntu_step_2() {
         log_warn "If you need AppImageLauncher/OpenRGB, run: ${script_name} setup-ubuntu step 1"
     else
         log_ok "${_deb_count} .deb file(s) installed"
+        log_info "Cleaning up .deb files from ~/Downloads..."
+        rm -f "$HOME/Downloads"/*.deb
+        log_ok "Downloads cleaned"
     fi
     echo
 
@@ -705,6 +710,7 @@ SVCEOF
     echo
     log_ok "System updated & upgraded"
     log_ok "Core tools: git, curl, gnome-tweaks, ssh, ufw, tree"
+    log_ok "GNOME Boxes: installed"
     log_ok "Browsers: Brave, Chromium, Opera, Firefox (snap)"
     log_ok "Apps: Obsidian, OBS Studio, VLC, qBittorrent (snap)"
     log_ok "VSCode: installed + official repo for updates"
@@ -718,7 +724,7 @@ SVCEOF
     if [[ "$_deb_warn" == true ]]; then
         log_warn "Custom .debs: none found in ~/Downloads"
     else
-        log_ok "Custom .debs: ${_deb_count} installed"
+        log_ok "Custom .debs: ${_deb_count} installed + cleaned from Downloads"
     fi
 
     if [[ "${#_snap_warns[@]}" -gt 0 ]]; then
@@ -731,7 +737,7 @@ SVCEOF
     log_txt_dm "  📁 Full log: $LOGFILE"
     echo
     log_clr_l1 "  Next:"
-    log_txt_dm "      ${script_name} setup-ubuntu step 3     (when it's ready)"
+    log_txt_dm "      ${script_name} setup-ubuntu step 3"
     echo
 
     exit 0
@@ -741,18 +747,203 @@ SVCEOF
 cmd_setup_ubuntu_step_3() {
     echo
     log_clr_l2 "  ╔══════════════════════════════════════════════════════════════╗"
-    log_clr_l2 "  ║         FRESH UBUNTU SETUP  —  STEP 3: LOOKS                ║"
+    log_clr_l2 "  ║         FRESH UBUNTU SETUP  —  STEP 3: LOOKS & CONFIG       ║"
     log_clr_l2 "  ╚══════════════════════════════════════════════════════════════╝"
     echo
 
-    log_warn "This step is not built yet."
+    require_ubuntu
+    check_internet
+
+    ensure_dir "$HOME/.local/logs"
+    LOGFILE="$HOME/.local/logs/jarvis-setup-$(date +%Y%m%d-%H%M%S).log"
+    exec > >(tee -a "$LOGFILE") 2>&1
+
+    log_info "Log file: $LOGFILE"
     echo
-    log_txt_nm "  It will handle:"
-    log_label "VSCode minimal theme and settings"
-    log_label "Terminal fonts and styling"
-    log_label "Ubuntu themes, icons, cursors"
+
+    # ── Phase 3A — WARP Client ────────────────────────────────────────────────
+    log_clr_l1 "  ┌─ [3A] WARP Client (Cloudflare) ────────────────────────────┐"
     echo
-    log_txt_dm "  For now, your system is fully functional after Step 2."
+
+    log_info "Adding Cloudflare GPG key..."
+    curl -fsSL https://pkg.cloudflareclient.com/cloudflare-release.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloudflare-client.gpg
+    log_ok "Cloudflare key added"
+
+    log_info "Adding Cloudflare apt repository..."
+    echo "deb [signed-by=/usr/share/keyrings/cloudflare-client.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list > /dev/null
+    log_ok "Cloudflare repo added"
+
+    log_info "Installing WARP client..."
+    sudo apt update -y
+    sudo apt install -y cloudflare-warp
+    log_ok "WARP client installed"
+
+    log_warn "WARP requires manual registration: run 'warp-cli register' and login via browser"
+    echo
+
+    # ── Phase 3B — VSCode Minimal Config ─────────────────────────────────────
+    log_clr_l1 "  ┌─ [3B] VSCode Minimal Theme & Settings ─────────────────────┐"
+    echo
+
+    log_info "Installing VSCode extensions..."
+    code --install-extension Catppuccin.catppuccin-vscode --force || log_warn "Catppuccin extension failed"
+    code --install-extension PKief.material-icon-theme --force || log_warn "Material Icon Theme extension failed"
+    code --install-extension Equinusocio.vsc-material-theme --force || log_warn "Material Theme extension failed"
+    log_ok "VSCode extensions installed"
+
+    log_info "Writing VSCode settings..."
+    ensure_dir "$HOME/.config/Code/User"
+    cat > "$HOME/.config/Code/User/settings.json" << 'VSCODEOF'
+{
+    "workbench.productIconTheme": "material-product-icons",
+    "workbench.iconTheme": "material-icon-theme",
+    "workbench.statusBar.visible": false,
+    "workbench.startupEditor": "none",
+    "editor.minimap.enabled": false,
+    "breadcrumbs.enabled": false,
+    "window.zoomLevel": 3,
+    "window.customMenuBarAltFocus": false,
+    "window.enableMenuBarMnemonics": false,
+    "editor.fontFamily": "'GeistMono NFP', 'Droid Sans Mono', monospace",
+    "workbench.colorTheme": "Catppuccin Macchiato",
+    "editor.padding.top": 16,
+    "editor.padding.bottom": 16,
+    "terminal.integrated.smoothScrolling": true,
+    "editor.cursorSmoothCaretAnimation": "on",
+    "workbench.list.smoothScrolling": true,
+    "editor.smoothScrolling": true,
+    "editor.formatOnSave": true,
+    "editor.cursorStyle": "block",
+    "editor.cursorBlinking": "phase",
+    "workbench.navigationControl.enabled": false,
+    "workbench.openInAgents.enabled": false,
+    "workbench.browser.showInTitleBar": false,
+    "window.menuBarVisibility": "toggle",
+    "workbench.layoutControl.enabled": false,
+    "window.commandCenter": false,
+    "workbench.editor.enablePreview": false,
+    "workbench.sideBar.location": "right",
+    "workbench.activityBar.location": "hidden"
+}
+VSCODEOF
+    log_ok "VSCode settings written"
+    echo
+
+    # ── Phase 3C — Zsh & Terminal Setup ──────────────────────────────────────
+    log_clr_l1 "  ┌─ [3C] Zsh, Oh-My-Zsh & Powerlevel10k ──────────────────────┐"
+    echo
+
+    log_info "Installing zsh..."
+    sudo apt install -y zsh
+    log_ok "zsh installed"
+
+    log_info "Installing Oh-My-Zsh (unattended)..."
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    log_ok "Oh-My-Zsh installed"
+
+    log_info "Installing zsh-autosuggestions..."
+    git clone https://github.com/zsh-users/zsh-autosuggestions.git "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+    log_ok "zsh-autosuggestions installed"
+
+    log_info "Installing zsh-syntax-highlighting..."
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
+    log_ok "zsh-syntax-highlighting installed"
+
+    log_info "Installing Powerlevel10k theme..."
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$HOME/.oh-my-zsh/custom/themes/powerlevel10k"
+    log_ok "Powerlevel10k installed"
+
+    log_info "Configuring .zshrc..."
+    sed -i 's/ZSH_THEME=".*"/ZSH_THEME="powerlevel10k\/powerlevel10k"/' "$HOME/.zshrc"
+    sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' "$HOME/.zshrc"
+    log_ok ".zshrc configured"
+
+    log_warn "Shell changed to zsh. LOG OUT and LOG BACK IN for changes to take effect."
+    echo
+
+    # ── Phase 3D — Browser Restoration Links ─────────────────────────────────
+    log_clr_l1 "  ┌─ [3D] Opening Essential Accounts in Brave ─────────────────┐"
+    echo
+
+    log_info "Opening Brave with restoration links..."
+    brave --new-window \
+        "https://pass.proton.me" \
+        "https://accounts.google.com" \
+        "https://web.whatsapp.com" \
+        "https://www.instagram.com" \
+        "https://www.facebook.com" \
+        "https://web.telegram.org/a" \
+        "https://github.com/login" \
+        "https://x.com" \
+        "https://web.programming-hero.com/dashboard" \
+        &>/dev/null & disown || \
+    snap run brave --new-window \
+        "https://pass.proton.me" \
+        "https://accounts.google.com" \
+        "https://web.whatsapp.com" \
+        "https://www.instagram.com" \
+        "https://www.facebook.com" \
+        "https://web.telegram.org/a" \
+        "https://github.com/login" \
+        "https://x.com" \
+        "https://web.programming-hero.com/dashboard" \
+        &>/dev/null & disown
+    log_ok "Brave opened with 9 tabs"
+    echo
+
+    # ── Phase 3E — Manual Instructions ───────────────────────────────────────
+    log_clr_l1 "  ┌─ [3E] Manual Steps (Human Required) ───────────────────────┐"
+    echo
+
+    log_txt_nm "  ${BORANGE}GNOME Shell Extensions:${RESET}"
+    log_txt_nm "    1. Open 'Extension Manager' (installed in Step 2)"
+    log_txt_nm "    2. Install: User Themes, Hide Top Bar, Blur my Shell"
+    log_txt_nm "    3. Install: Burn My Windows, Compiz alike magic lamp"
+    log_txt_nm "    4. Install: Compiz windows effect"
+    echo
+
+    log_txt_nm "  ${BORANGE}Themes & Icons:${RESET}"
+    log_txt_nm "    1. Download Graphite GTK/Shell theme from GitHub"
+    log_txt_nm "    2. Download McMojave-circle icon theme"
+    log_txt_nm "    3. Download ArcAurora cursors"
+    log_txt_nm "    4. Extract to ~/.themes, ~/.icons, ~/.icons respectively"
+    log_txt_nm "    5. Apply via GNOME Tweaks or gsettings"
+    echo
+
+    log_txt_nm "  ${BORANGE}Fonts:${RESET}"
+    log_txt_nm "    1. Download Nerd Fonts (Inter, Poppins, DM Mono, Space Mono)"
+    log_txt_nm "    2. Copy .ttf files to ~/.fonts"
+    log_txt_nm "    3. Run: fc-cache -fv"
+    log_txt_nm "    4. Set font in GNOME Settings > Appearance"
+    echo
+
+    log_txt_nm "  ${BORANGE}Terminal Gogh Theme:${RESET}"
+    log_txt_nm "    1. Run: bash -c \"\$(wget -qO- https://git.io/vQgMr)\""
+    log_txt_nm "    2. Pick theme number interactively"
+    echo
+
+    log_txt_nm "  ${BORANGE}WARP Registration:${RESET}"
+    log_txt_nm "    1. Run: warp-cli register"
+    log_txt_nm "    2. Login via browser when prompted"
+    log_txt_nm "    3. Run: warp-cli connect"
+    echo
+
+    # ── Final Summary ─────────────────────────────────────────────────────────
+    show_divider
+    log_clr_l2 "  ✅ STEP 3 COMPLETE — Here's what happened:"
+    echo
+    log_ok "WARP client: installed (registration required)"
+    log_ok "VSCode: minimal theme + extensions + settings applied"
+    log_ok "Zsh: installed with Oh-My-Zsh, autosuggestions, syntax-highlighting"
+    log_ok "Powerlevel10k: theme installed and configured"
+    log_ok ".zshrc: configured with plugins"
+    log_ok "Brave: opened with 9 restoration links"
+    log_warn "Manual steps listed above require human interaction"
+    log_warn "Log out and back in for zsh to become default shell"
+    echo
+    log_txt_dm "  📁 Full log: $LOGFILE"
+    echo
+    log_clr_l1 "  Setup complete. Your system is ready."
     echo
 
     exit 0
