@@ -495,6 +495,7 @@ script_name  small_desc  version
 | `tree`       | `list, lst, ls`           | Runs `tree --gitignore --dirsfirst`             | tree (apt)          |
 | `power`      | `poweroff, pwr, shutdown` | `sudo shutdown now`                             | sudo                |
 | `attendance` | `attend, att`             | Interactive Markdown attendance sheet generator | none                |
+| `nmhunter`   | `nm, hunt`                | Hunt and eliminate node_modules directories     | none                |
 
 ---
 
@@ -653,5 +654,6 @@ Bash executes top to bottom. If the dispatcher runs before functions are defined
 
 | Version  | Change                                                                       |
 | :------- | :--------------------------------------------------------------------------- |
+| `1.12.0` | Added `nmhunter` command — hunt and eliminate node_modules directories       |
 | `1.11.0` | Added `attendance` command — interactive Markdown attendance sheet generator |
 | `1.10.0` | Previous baseline before attendance integration                              |
