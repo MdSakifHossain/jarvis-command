@@ -618,7 +618,6 @@ export PATH="$PATH:$(pwd)"
 jarvis --version
 jarvis help
 ```
-````
 
 ### Part 2: Set up the completion generator
 
@@ -864,6 +863,7 @@ which jarvis
 ## 🎉 You're done!
 
 Now you have professional auto-completion for your CLI tool, just like git or npm!
+````
 
 ## Step 5: Quick Setup Script
 
