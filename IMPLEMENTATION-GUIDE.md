@@ -20,11 +20,9 @@
 10. [Dispatcher (Execution block)](#10-dispatcher-execution-block)
 11. [Private functions — the `_` prefix convention](#11-private-functions--the-_-prefix-convention)
 12. [Interactive input pattern](#12-interactive-input-pattern)
-13. [Naming collision rules](#13-naming-collision-rules)
-14. [All current commands](#14-all-current-commands)
-15. [How to add a new command — step by step](#15-how-to-add-a-new-command--step-by-step)
-16. [What not to do](#16-what-not-to-do)
-17. [Changelog](#17-changelog)
+13. [Naming conventions](#13-naming-conventions)
+14. [How to add a new command — step by step](#14-how-to-add-a-new-command--step-by-step)
+15. [What not to do](#15-what-not-to-do)
 
 ---
 
@@ -34,7 +32,6 @@
 
 It is intentionally a monolith. Everything lives in one file. There is no `source`-ing of external files, no plugin system, no config directory. If you are coming from JS and thinking "I'll split this into modules" — don't. The monolith is the design.
 
-**Current version:** `1.11.0`
 **Shell:** bash (not sh, not zsh)
 **Platform:** Ubuntu (some commands are Ubuntu/GNOME-only)
 
@@ -83,7 +80,7 @@ The execution block (`case "$SUBCOMMAND"`) is **always the last thing in the fil
 Version is stored in the `version` variable near the top:
 
 ```bash
-version="1.11.0"
+version="1.13.0"
 ```
 
 Format is `MAJOR.MINOR.PATCH`. Bump rules:
@@ -448,58 +445,42 @@ Always show `log_ok` after a successful input. Always print a blank `echo` after
 
 ---
 
-## 13. Naming collision rules
+## 13. Naming conventions
 
-When integrating a new feature, check against these reserved names before naming anything:
+These are the rules for naming things so you don't break existing code.
 
-### Reserved global function names (do not redefine)
+### The underscore prefix
 
-```
-log_clr_l1   log_clr_l2    log_clr_l3
-log_txt_nm   log_txt_bd    log_txt_dm
-log_info     log_ok        log_warn     log_fail    log_label
-show_divider divider_small thin_div
-prompt_line  step
-require_ubuntu  require_apt_package  require_external_dependency
-require_openrgb require_dbus  require_gnome_screensaver
-require_gnome_lock  require_file
-show_version  show_banner  show_banner_1  show_banner_2
-refresh_banner  show_help  show_light_help
-lock_helper  unlock_helper  lights_on_helper  lights_off_helper
-cmd_lights  cmd_lock  cmd_unlock  cmd_tree
-cmd_observe_vault_log  cmd_attendance
-```
+- **Public functions** (called by the dispatcher or user-facing): no underscore. Example: `cmd_lights()`, `show_banner()`.
+- **Private functions** (implementation details): underscore prefix. Example: `_is_leap_year()`, `_show_attendance_banner()`.
 
-### Reserved global variable names (do not redefine at global scope)
+### Reserved namespaces
 
-```
-RESET BOLD DIM ORANGE BORANGE DIM_ORANGE BWHITE BGREEN RED YELLOW BLUE BBLUE
-script_name  small_desc  version
-```
+Do not create new functions or global variables that collide with these patterns. They are reserved for specific purposes:
 
-**All variables inside `cmd_*` must be `local`.** This sidesteps collisions entirely inside functions.
+| Prefix | Purpose | Examples |
+| :----- | :------ | :------- |
+| `cmd_` | Public command entry points | `cmd_lights()`, `cmd_lock()` |
+| `log_` | Logging and output helpers | `log_info()`, `log_ok()`, `log_fail()` |
+| `show_` | Banner and display functions | `show_banner()`, `show_help()` |
+| `require_` | Guard / dependency checkers | `require_ubuntu()`, `require_apt_package()` |
+| `_` | Private helpers | `_is_leap_year()`, `_build_week_section()` |
 
-**Private helpers for a new feature** must be prefixed with `_` and ideally scoped further with the feature name: `_<feature>_<thing>`. Example: `_attendance_build_row` rather than just `_build_row`.
+### Global variables
 
----
+- **Never define global variables inside `cmd_*` functions.** Always use `local`.
+- The top-level color variables (`RESET`, `BOLD`, `ORANGE`, etc.) and identity variables (`script_name`, `small_desc`, `version`) are reserved. Do not redefine them.
 
-## 14. All current commands
+### Feature-scoped naming
 
-| Command      | Aliases                   | What it does                                    | Dependencies        |
-| :----------- | :------------------------ | :---------------------------------------------- | :------------------ |
-| `lights on`  | `light, ram, led, lt`     | Turns RAM LED white via openrgb                 | openrgb             |
-| `lights off` | same                      | Turns RAM LED off                               | openrgb             |
-| `lock [N]`   | —                         | Locks GNOME screen. Optional delay in minutes   | dbus, GNOME         |
-| `unlock`     | —                         | Unlocks GNOME screen                            | dbus, GNOME         |
-| `observe`    | `monitor`                 | Tails the vault observer log file               | log file must exist |
-| `tree`       | `list, lst, ls`           | Runs `tree --gitignore --dirsfirst`             | tree (apt)          |
-| `power`      | `poweroff, pwr, shutdown` | `sudo shutdown now`                             | sudo                |
-| `attendance` | `attend, att`             | Interactive Markdown attendance sheet generator | none                |
-| `nmhunter`   | `nm, hunt`                | Hunt and eliminate node_modules directories     | none                |
+When a feature needs multiple private helpers, scope them with the feature name: `_<feature>_<thing>()` rather than generic names. This prevents collisions when multiple features grow.
+
+**Good:** `_attendance_build_row()`, `_nmhunter_bytes_to_human()`
+**Bad:** `_build_row()`, `_bytes_to_human()`
 
 ---
 
-## 15. How to add a new command — step by step
+## 14. How to add a new command — step by step
 
 This is the checklist. Follow it in order.
 
@@ -507,7 +488,7 @@ This is the checklist. Follow it in order.
 
 Answer these before writing code:
 
-- What is the command name? Check section 14 for conflicts.
+- What is the command name? Check existing commands for conflicts.
 - Does it need Ubuntu? GNOME? An external tool?
 - Is it interactive (prompts the user) or silent (just does a thing)?
 - Does it produce output files? Print to stdout?
@@ -518,7 +499,7 @@ Answer these before writing code:
 In the Identity block at the top:
 
 ```bash
-version="1.11.0"  →  version="1.12.0"   # new command = MINOR bump
+version="1.13.0"  →  version="1.14.0"   # new command = MINOR bump
 ```
 
 ### Step 3 — Write the private helpers (if needed)
@@ -609,7 +590,19 @@ mycommand | mc | myalias)
 
 Add it before the `*)` fallthrough.
 
-### Step 9 — Test
+### Step 9 — Update the completion schema
+
+Open `jarvis-schema.json` and add your command to the `"commands"` array. Match the structure of existing commands. Then run:
+
+```bash
+python3 generate-completions.py
+./installer.sh update
+exec zsh
+```
+
+See `SCHEMA-GUIDE.md` for detailed schema documentation.
+
+### Step 10 — Test
 
 ```bash
 bash -n jarvis          # syntax check — must pass with no output
@@ -620,7 +613,7 @@ jarvis mycommand garbage # bad input fails cleanly with log_fail
 
 ---
 
-## 16. What not to do
+## 15. What not to do
 
 These are real mistakes that were caught. Don't repeat them.
 
@@ -630,7 +623,7 @@ Use `return 0` or `return 1`. `exit` kills the entire process, not just the func
 **Don't define global variables inside `cmd_*` functions.**
 Always use `local`. Without it, variables leak into the global scope and can stomp on other commands if jarvis ever chains commands in the future.
 
-**Don't redefine any function from section 13.**
+**Don't redefine any function from a reserved namespace.**
 If your feature needs a "divider", call `show_divider`. Don't make your own `divider()`. That caused a collision during the attendance integration.
 
 **Don't use `echo -e` with a variable that might contain `-e` as content.**
@@ -648,12 +641,5 @@ Without `|| true`, `set -e` will kill the script when there are no arguments and
 **Don't put the execution block anywhere except the very end of the file.**
 Bash executes top to bottom. If the dispatcher runs before functions are defined, it will fail.
 
----
-
-## 17. Changelog
-
-| Version  | Change                                                                       |
-| :------- | :--------------------------------------------------------------------------- |
-| `1.12.0` | Added `nmhunter` command — hunt and eliminate node_modules directories       |
-| `1.11.0` | Added `attendance` command — interactive Markdown attendance sheet generator |
-| `1.10.0` | Previous baseline before attendance integration                              |
+**Don't forget to update the completion schema.**
+If you add, rename, or remove a command, subcommand, flag, or argument, the schema must change too. Otherwise tab completions will lie to the user.
