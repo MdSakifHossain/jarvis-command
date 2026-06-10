@@ -5,8 +5,8 @@
 <h1 align="center">Jarvis</h1>
 
 <p align="center">
-  <b>A personal system command for Linux workstations</b><br>
-  <a href="#installation">Install</a> · <a href="#usage">Usage</a> · <a href="#commands">Commands</a>
+  <b>A personal system command for Linux workstations</b><br>****
+  <a href="#installation">Install</a> · <a href="#usage">Usage</a>
 </p>
 
 <p align="center">
@@ -17,67 +17,38 @@
 
 ## Overview
 
-**Jarvis** is a personal CLI utility that wraps common workstation tasks into a single, memorable command. It manages screen locks, RGB lighting, and log monitoring through a unified interface with colored terminal output and responsive ASCII banners.
+**Jarvis** is a single-file personal CLI utility for Ubuntu. It wraps common workstation tasks — screen control, RGB lighting, log monitoring, file cleanup, and more — into one memorable command with colored output and responsive ASCII banners.
 
-Built as a learning project to understand how custom system commands are structured, installed, and distributed.
-
-## Features
-
-- **Screen Control** — Lock or unlock your GNOME session instantly or with a delay
-- **RGB Lighting** — Toggle RAM LED colors via OpenRGB (`ffffff` / `000000`)
-- **Log Monitor** — Live tail of personal logs with a clean banner refresh
-- **Responsive UI** — Adapts banner width to terminal size
-- **Zero Dependencies** — Pure Bash (installer uses `sudo` only for `/usr/local/bin`)
+Built as a learning project for custom system command structure, installation, and distribution.
 
 ## Installation
 
 ### Prerequisites
 
-- Linux with `bash` 4.0+
-- `sudo` access (for installing to `/usr/local/bin`)
-- Optional: `openrgb` for lighting control, GNOME for screen lock features
+- Ubuntu with `bash` 4.0+
+- `sudo` access (for `/usr/local/bin`)
+- Optional: `openrgb` for lighting, GNOME for screen lock features
 
 ### Quick Install
 
 ```bash
-sudo apt update && sudo apt install git curl -y &&
-git clone https://github.com/MdSakifHossain/jarvis-command &&
-cd jarvis-command &&
-chmod +x installer.sh &&
-./installer.sh install dev/jarvis &&
-jarvis setup-ubuntu step 1
-```
-
-### Manual Install
-
-```bash
-# Interactive mode — prompts for source path
+git clone https://github.com/MdSakifHossain/jarvis-command
+cd jarvis-command
+chmod +x installer.sh
 ./installer.sh install
-
-# OR
-
-# Direct mode — specify source
-./installer.sh install command/jarvis
 ```
 
-### Update
-
-After editing `command/jarvis`, reinstall:
+### Update / Uninstall
 
 ```bash
-./installer.sh install -y
+./installer.sh update      # Re-install after changes
+./installer.sh uninstall   # Remove completely
 ```
 
-### Uninstall
+After install or update, reload your shell:
 
 ```bash
-# Interactive mode
-./installer.sh uninstall
-
-# OR
-
-# Direct mode
-./installer.sh uninstall -y
+exec zsh
 ```
 
 ## Usage
@@ -86,33 +57,11 @@ After editing `command/jarvis`, reinstall:
 jarvis [command] [options]
 ```
 
-### Global Flags
-
-| Flag            | Description           |
-| --------------- | --------------------- |
-| `-v, --version` | Show version and exit |
-| `-h, --help`    | Show help and exit    |
-
-### Commands
-
-| Command   | Description                      | Example            |
-| --------- | -------------------------------- | ------------------ |
-| `lights`  | Control RGB RAM lighting         | `jarvis lights on` |
-| `lock`    | Lock screen (optionally delayed) | `jarvis lock 5`    |
-| `unlock`  | Unlock GNOME session             | `jarvis unlock`    |
-| `observe` | Monitor vault logs live          | `jarvis observe`   |
-| `monitor` | Alias for `observe`              | `jarvis monitor`   |
-
-## Project Structure
+Discover all commands and flags:
 
 ```bash
-jarvis-command/
-├── command/           # Source script(s) for installation
-│   └── jarvis         # The main command (installed to /usr/local/bin)
-├── Banner.png         # Banner for README
-├── installer.sh       # Unified install/uninstall tool
-├── README.md
-└── todo.md
+jarvis --help
+jarvis <command> --help
 ```
 
 ## Important Notes
