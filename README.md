@@ -5,8 +5,7 @@
 <h1 align="center">Jarvis</h1>
 
 <p align="center">
-  <b>A personal system command for Linux workstations</b><br>****
-  <a href="#installation">Install</a> · <a href="#usage">Usage</a>
+  <b>A personal system command for Linux workstations</b>
 </p>
 
 <p align="center">
