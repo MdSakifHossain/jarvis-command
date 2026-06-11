@@ -1,4 +1,4 @@
-# JARVIS — Context & Implementation Guide
+# JARVIS — Implementation Guide
 
 > **This file is the single source of truth for the `jarvis` script.**
 > Read this before touching the code. Every rule here exists because
@@ -8,21 +8,40 @@
 
 ## Table of Contents
 
-1. [What is jarvis](#1-what-is-jarvis)
-2. [File structure](#2-file-structure)
-3. [Versioning](#3-versioning)
-4. [Color system](#4-color-system)
-5. [Logging & UI helpers](#5-logging--ui-helpers)
-6. [Guard / require helpers](#6-guard--require-helpers)
-7. [Banner system](#7-banner-system)
-8. [Help system](#8-help-system)
-9. [Command anatomy](#9-command-anatomy)
-10. [Dispatcher (Execution block)](#10-dispatcher-execution-block)
-11. [Private functions — the `_` prefix convention](#11-private-functions--the-_-prefix-convention)
-12. [Interactive input pattern](#12-interactive-input-pattern)
-13. [Naming conventions](#13-naming-conventions)
-14. [How to add a new command — step by step](#14-how-to-add-a-new-command--step-by-step)
-15. [What not to do](#15-what-not-to-do)
+- [JARVIS — Implementation Guide](#jarvis--implementation-guide)
+  - [Table of Contents](#table-of-contents)
+  - [1. What is jarvis](#1-what-is-jarvis)
+  - [2. File structure](#2-file-structure)
+  - [3. Versioning](#3-versioning)
+  - [4. Color system](#4-color-system)
+  - [5. Logging \& UI helpers](#5-logging--ui-helpers)
+    - [Color wrappers (for ASCII art / banners only)](#color-wrappers-for-ascii-art--banners-only)
+    - [Text wrappers](#text-wrappers)
+    - [Semantic logging](#semantic-logging)
+    - [UI structure helpers](#ui-structure-helpers)
+    - [Interactive input helpers](#interactive-input-helpers)
+  - [6. Guard / require helpers](#6-guard--require-helpers)
+  - [7. Banner system](#7-banner-system)
+  - [8. Help system](#8-help-system)
+    - [Tier 1 — global help](#tier-1--global-help)
+    - [Tier 2 — per-command help](#tier-2--per-command-help)
+  - [9. Command anatomy](#9-command-anatomy)
+  - [10. Dispatcher (Execution block)](#10-dispatcher-execution-block)
+  - [11. Private functions — the `_` prefix convention](#11-private-functions--the-_-prefix-convention)
+  - [12. Interactive input pattern](#12-interactive-input-pattern)
+  - [13. Naming rules](#13-naming-rules)
+  - [14. How to add a new command — step by step](#14-how-to-add-a-new-command--step-by-step)
+    - [Step 1 — Plan](#step-1--plan)
+    - [Step 2 — Bump the version](#step-2--bump-the-version)
+    - [Step 3 — Write the private helpers (if needed)](#step-3--write-the-private-helpers-if-needed)
+    - [Step 4 — Write the feature banner (if interactive)](#step-4--write-the-feature-banner-if-interactive)
+    - [Step 5 — Write the per-command help](#step-5--write-the-per-command-help)
+    - [Step 6 — Write `cmd_myfeature()`](#step-6--write-cmd_myfeature)
+    - [Step 7 — Update `show_help()`](#step-7--update-show_help)
+    - [Step 8 — Add to the dispatcher](#step-8--add-to-the-dispatcher)
+    - [Step 9 — Update `jarvis-schema.json`](#step-9--update-jarvis-schemajson)
+    - [Step 10 — Test](#step-10--test)
+  - [15. What not to do](#15-what-not-to-do)
 
 ---
 
@@ -80,7 +99,7 @@ The execution block (`case "$SUBCOMMAND"`) is **always the last thing in the fil
 Version is stored in the `version` variable near the top:
 
 ```bash
-version="1.13.0"
+version="X.Y.Z"
 ```
 
 Format is `MAJOR.MINOR.PATCH`. Bump rules:
@@ -103,7 +122,7 @@ These are the only color variables that exist. Do not add new ones without a rea
 RESET='\033[0m'
 BOLD='\033[1m'
 DIM='\033[2m'
-ORANGE='\033[38;5;209m'      # salmon-orange, primary brand color
+ORANGE='\033[38;5;209m'       # salmon-orange, primary brand color
 BORANGE='\033[1;38;5;209m'   # bold orange, used for emphasis
 DIM_ORANGE='\033[2;38;5;209m' # dim orange, used for decorative/secondary
 BWHITE='\033[1;37m'           # bold white, used for labels and step titles
@@ -125,8 +144,8 @@ These are the only helpers you use inside any command. Never `echo` raw ANSI cod
 ### Color wrappers (for ASCII art / banners only)
 
 ```bash
-log_clr_l1()  # ORANGE    — mid brightness lines
-log_clr_l2()  # BORANGE   — top/bright lines
+log_clr_l1()  # ORANGE     — mid brightness lines
+log_clr_l2()  # BORANGE    — top/bright lines
 log_clr_l3()  # DIM_ORANGE — dim/fade lines
 ```
 
@@ -271,7 +290,7 @@ Usage:
 
 Available commands:
     lights, lock, unlock, observe, monitor,
-    tree, power, attendance, version, help
+    tree, power, attendance, nmhunter, bkash, version, help
     # ↑ add your new command here
 
 ...
@@ -395,9 +414,9 @@ esac
 Any function that is **not meant to be called directly by the dispatcher** gets an underscore prefix. This is the jarvis equivalent of "private" or "module-internal".
 
 ```bash
-_month_name_to_num()    # private helper, only used inside attendance
-_is_leap_year()         # private helper
-_build_week_section()   # private builder
+_month_name_to_num()      # private helper, only used inside attendance
+_is_leap_year()           # private helper
+_build_week_section()     # private builder
 _show_attendance_banner() # private banner
 _show_attendance_help()   # private help
 ```
@@ -445,38 +464,22 @@ Always show `log_ok` after a successful input. Always print a blank `echo` after
 
 ---
 
-## 13. Naming conventions
+## 13. Naming rules
 
-These are the rules for naming things so you don't break existing code.
+**Functions**
 
-### The underscore prefix
+- Public (dispatcher-facing): no prefix — `cmd_myfeature`, `show_help`, `require_ubuntu`
+- Private (internal helpers): `_` prefix — `_myfeature_do_thing`, `_show_myfeature_banner`
+- Always scope private helpers with the feature name: `_attendance_build_row`, not `_build_row`
 
-- **Public functions** (called by the dispatcher or user-facing): no underscore. Example: `cmd_lights()`, `show_banner()`.
-- **Private functions** (implementation details): underscore prefix. Example: `_is_leap_year()`, `_show_attendance_banner()`.
+**Variables**
 
-### Reserved namespaces
+- All variables inside any `cmd_*` function must be `local` — no exceptions
+- Global variables are only declared in the Identity and Color blocks at the top
+- Use `SCREAMING_SNAKE_CASE` for globals, `lower_snake_case` for locals
 
-Do not create new functions or global variables that collide with these patterns. They are reserved for specific purposes:
-
-| Prefix | Purpose | Examples |
-| :----- | :------ | :------- |
-| `cmd_` | Public command entry points | `cmd_lights()`, `cmd_lock()` |
-| `log_` | Logging and output helpers | `log_info()`, `log_ok()`, `log_fail()` |
-| `show_` | Banner and display functions | `show_banner()`, `show_help()` |
-| `require_` | Guard / dependency checkers | `require_ubuntu()`, `require_apt_package()` |
-| `_` | Private helpers | `_is_leap_year()`, `_build_week_section()` |
-
-### Global variables
-
-- **Never define global variables inside `cmd_*` functions.** Always use `local`.
-- The top-level color variables (`RESET`, `BOLD`, `ORANGE`, etc.) and identity variables (`script_name`, `small_desc`, `version`) are reserved. Do not redefine them.
-
-### Feature-scoped naming
-
-When a feature needs multiple private helpers, scope them with the feature name: `_<feature>_<thing>()` rather than generic names. This prevents collisions when multiple features grow.
-
-**Good:** `_attendance_build_row()`, `_nmhunter_bytes_to_human()`
-**Bad:** `_build_row()`, `_bytes_to_human()`
+**Before naming anything, check the dispatcher.**
+The dispatcher is the canonical list of what already exists. If a name is already in a `case` pattern — as a command or an alias — don't reuse it. That's the only collision check you need.
 
 ---
 
@@ -488,7 +491,7 @@ This is the checklist. Follow it in order.
 
 Answer these before writing code:
 
-- What is the command name? Check existing commands for conflicts.
+- What is the command name? Check the dispatcher (section 10) for conflicts.
 - Does it need Ubuntu? GNOME? An external tool?
 - Is it interactive (prompts the user) or silent (just does a thing)?
 - Does it produce output files? Print to stdout?
@@ -496,10 +499,10 @@ Answer these before writing code:
 
 ### Step 2 — Bump the version
 
-In the Identity block at the top:
+In the Identity block at the top. Example:
 
 ```bash
-version="1.13.0"  →  version="1.14.0"   # new command = MINOR bump
+version="1.11.0"  →  version="1.12.0"   # new command = MINOR bump
 ```
 
 ### Step 3 — Write the private helpers (if needed)
@@ -590,9 +593,9 @@ mycommand | mc | myalias)
 
 Add it before the `*)` fallthrough.
 
-### Step 9 — Update the completion schema
+### Step 9 — Update `jarvis-schema.json`
 
-Open `jarvis-schema.json` and add your command to the `"commands"` array. Match the structure of existing commands. Then run:
+Add the new command to the schema file so tab completions stay in sync. See `SCHEMA-GUIDE.md` for the full reference. Then regenerate:
 
 ```bash
 python3 generate-completions.py
@@ -600,12 +603,10 @@ python3 generate-completions.py
 exec zsh
 ```
 
-See `SCHEMA-GUIDE.md` for detailed schema documentation.
-
 ### Step 10 — Test
 
 ```bash
-bash -n jarvis          # syntax check — must pass with no output
+bash -n jarvis           # syntax check — must pass with no output
 jarvis mycommand --help  # help flag works
 jarvis mycommand         # happy path works
 jarvis mycommand garbage # bad input fails cleanly with log_fail
@@ -623,7 +624,7 @@ Use `return 0` or `return 1`. `exit` kills the entire process, not just the func
 **Don't define global variables inside `cmd_*` functions.**
 Always use `local`. Without it, variables leak into the global scope and can stomp on other commands if jarvis ever chains commands in the future.
 
-**Don't redefine any function from a reserved namespace.**
+**Don't redefine any function from the infrastructure sections.**
 If your feature needs a "divider", call `show_divider`. Don't make your own `divider()`. That caused a collision during the attendance integration.
 
 **Don't use `echo -e` with a variable that might contain `-e` as content.**
@@ -640,6 +641,3 @@ Without `|| true`, `set -e` will kill the script when there are no arguments and
 
 **Don't put the execution block anywhere except the very end of the file.**
 Bash executes top to bottom. If the dispatcher runs before functions are defined, it will fail.
-
-**Don't forget to update the completion schema.**
-If you add, rename, or remove a command, subcommand, flag, or argument, the schema must change too. Otherwise tab completions will lie to the user.
