@@ -14,9 +14,9 @@
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
 </p>
 
-## Overview
+---
 
-**Jarvis** is a single-file personal CLI utility for Ubuntu. It wraps common workstation tasks — screen control, RGB lighting, log monitoring, file cleanup, and more — into one memorable command with colored output and responsive ASCII banners.
+**Jarvis** wraps common workstation tasks into a single memorable command — screen locks, RGB lighting, log monitoring, file cleanup, and more. Pure Bash, no dependencies, colored output.
 
 Built as a learning project for custom system command structure, installation, and distribution.
 
