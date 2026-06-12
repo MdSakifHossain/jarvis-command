@@ -22,13 +22,14 @@ GITHUB_ASSET_GENERATOR="${GITHUB_RAW_BASE}/generate-completions.py"
 COMMAND_DIR=""        # set by prepare_assets
 SCHEMA_FILE=""        # set by prepare_assets
 GENERATOR=""          # set by prepare_assets
+COMPLETION_FILE=""    # set by prepare_assets
+
+# ── Temp dir for generated artifacts (always used, both modes) ────────────────
+_TMP_DIR=""           # set in main; cleaned up via trap
 
 # ── Fixed paths ───────────────────────────────────────────────────────────────
 INSTALL_DIR="/usr/local/bin"
 OMZ_COMPLETION_DIR="${HOME}/.oh-my-zsh/completions"
-
-# ── Temporary directory (used only in download mode) ─────────────────────────
-_TMP_DIR=""           # set by prepare_assets when in download mode
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RESET='\033[0m'
@@ -48,7 +49,6 @@ log_clr_l2() { echo -e "${BORANGE}${1}${RESET}"; }
 log_clr_l3() { echo -e "${DIM_ORANGE}${1}${RESET}"; }
 
 # ── Text helpers ──────────────────────────────────────────────────────────────
-log_txt_nm() { echo -e "${1}"; }
 log_txt_bd() { echo -e "${BOLD}${1}${RESET}"; }
 log_txt_dm() { echo -e "${DIM}${1}${RESET}"; }
 
@@ -65,11 +65,9 @@ log_label() { echo -e "  ${BORANGE}▸${RESET}  ${BWHITE}$*${RESET}"; }
 # ── UI helpers ────────────────────────────────────────────────────────────────
 divider()  { log_clr_l3 "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; }
 thin_div() { log_txt_dm "  ──────────────────────────────────────────────────────────────────"; }
-
-step() { echo -e "  ${BORANGE}[${1}]${RESET}  ${BWHITE}${2}${RESET}"; }
+step()     { echo -e "  ${BORANGE}[${1}]${RESET}  ${BWHITE}${2}${RESET}"; }
 
 prompt_yn() {
-  # $1 = question   returns 0 for yes, 1 for no
   echo -ne "  ${BORANGE}?${RESET}  ${BWHITE}${1}${RESET} ${DIM}[y/N]${RESET} ${ORANGE}›${RESET} "
   read -r _ans
   [[ "${_ans,,}" == "y" || "${_ans,,}" == "yes" ]]
@@ -127,16 +125,15 @@ show_help() {
   echo
 }
 
-# ── Asset cleanup (called via trap on exit in download mode) ──────────────────
+# ── Cleanup (always registered; removes _TMP_DIR on exit/failure) ─────────────
 cleanup() {
   if [[ -n "$_TMP_DIR" && -d "$_TMP_DIR" ]]; then
     rm -rf "$_TMP_DIR"
-    # log_info may not be available if we exit very early; use plain echo
-    echo -e "  ${DIM}Temporary files removed  →  ${_TMP_DIR}${RESET}" >&2
+    echo -e "  ${DIM}Temporary files removed  →  ${_TMP_DIR}${RESET}"
   fi
 }
 
-# ── Detect download tool (curl or wget) ───────────────────────────────────────
+# ── Detect download tool ──────────────────────────────────────────────────────
 _detect_downloader() {
   if command -v curl > /dev/null 2>&1; then
     echo "curl"
@@ -149,11 +146,8 @@ _detect_downloader() {
 
 # ── Download a single file ────────────────────────────────────────────────────
 _download_file() {
-  local url="$1"
-  local dest="$2"
-  local downloader
+  local url="$1" dest="$2" downloader
   downloader="$(_detect_downloader)"
-
   if [[ "$downloader" == "curl" ]]; then
     curl -fsSL "$url" -o "$dest"
   else
@@ -162,61 +156,58 @@ _download_file() {
 }
 
 # ── Asset preparation layer ───────────────────────────────────────────────────
-# Detects local vs download mode based solely on the presence of required files.
-# Sets the global variables COMMAND_DIR, SCHEMA_FILE, GENERATOR.
-# In download mode, also sets _TMP_DIR and registers a trap for cleanup.
+# Local mode  : uses files from the repo next to installer.sh — nothing downloaded.
+# Online mode : downloads everything into _TMP_DIR from GitHub.
+# Either way  : _jarvis (the generated completion) always lives in _TMP_DIR
+#               and is cleaned up automatically via the trap registered in main.
 prepare_assets() {
   local local_command_dir="${SCRIPT_DIR}/command"
   local local_schema="${SCRIPT_DIR}/jarvis-schema.json"
   local local_generator="${SCRIPT_DIR}/generate-completions.py"
 
   if [[ -d "$local_command_dir" && -f "$local_schema" && -f "$local_generator" ]]; then
-    # ── Local mode ──────────────────────────────────────────────────────────
+    # ── Local mode ────────────────────────────────────────────────────────────
     log_info "Local assets detected  →  using local files (no download needed)"
     COMMAND_DIR="$local_command_dir"
     SCHEMA_FILE="$local_schema"
     GENERATOR="$local_generator"
   else
-    # ── Download mode ────────────────────────────────────────────────────────
+    # ── Online mode ───────────────────────────────────────────────────────────
     log_info "Local assets not found  →  switching to download mode"
     echo
 
-    _TMP_DIR="$(mktemp -d /tmp/jarvis-installer.XXXXXX)"
-    trap cleanup EXIT
+    local dl_dir="${_TMP_DIR}/download"
+    mkdir -p "${dl_dir}/command"
 
     log_info "Temporary directory  →  ${_TMP_DIR}"
     echo
 
-    local tmp_command_dir="${_TMP_DIR}/command"
-    mkdir -p "$tmp_command_dir"
-
     log_info "Downloading jarvis command…"
-    _download_file "$GITHUB_ASSET_COMMAND" "${tmp_command_dir}/jarvis"
-    chmod +x "${tmp_command_dir}/jarvis"
-    log_ok "Downloaded  →  ${tmp_command_dir}/jarvis"
+    _download_file "$GITHUB_ASSET_COMMAND" "${dl_dir}/command/jarvis"
+    chmod +x "${dl_dir}/command/jarvis"
+    log_ok "Downloaded  →  ${dl_dir}/command/jarvis"
 
     log_info "Downloading jarvis-schema.json…"
-    _download_file "$GITHUB_ASSET_SCHEMA" "${_TMP_DIR}/jarvis-schema.json"
-    log_ok "Downloaded  →  ${_TMP_DIR}/jarvis-schema.json"
+    _download_file "$GITHUB_ASSET_SCHEMA" "${dl_dir}/jarvis-schema.json"
+    log_ok "Downloaded  →  ${dl_dir}/jarvis-schema.json"
 
     log_info "Downloading generate-completions.py…"
-    _download_file "$GITHUB_ASSET_GENERATOR" "${_TMP_DIR}/generate-completions.py"
-    log_ok "Downloaded  →  ${_TMP_DIR}/generate-completions.py"
+    _download_file "$GITHUB_ASSET_GENERATOR" "${dl_dir}/generate-completions.py"
+    log_ok "Downloaded  →  ${dl_dir}/generate-completions.py"
 
-    COMMAND_DIR="$tmp_command_dir"
-    SCHEMA_FILE="${_TMP_DIR}/jarvis-schema.json"
-    GENERATOR="${_TMP_DIR}/generate-completions.py"
+    COMMAND_DIR="${dl_dir}/command"
+    SCHEMA_FILE="${dl_dir}/jarvis-schema.json"
+    GENERATOR="${dl_dir}/generate-completions.py"
   fi
 
-  # Derive the completion output path from wherever GENERATOR lives
-  COMPLETION_FILE="$(dirname "$GENERATOR")/_jarvis"
+  # _jarvis always generated into _TMP_DIR — never into the repo or system dirs
+  COMPLETION_FILE="${_TMP_DIR}/_jarvis"
 }
 
-# ── Resolve jarvis file from COMMAND_DIR ──────────────────────────────────────
+# ── Resolve jarvis binary from COMMAND_DIR ────────────────────────────────────
 resolve_jarvis() {
   if [[ ! -d "$COMMAND_DIR" ]]; then
-    log_fail "Directory not found: ${COMMAND_DIR}
-Expected the jarvis script inside: ${COMMAND_DIR}/"
+    log_fail "Directory not found: ${COMMAND_DIR}"
   fi
   local file
   file=$(find "$COMMAND_DIR" -maxdepth 1 -type f | sort | head -n 1)
@@ -224,20 +215,6 @@ Expected the jarvis script inside: ${COMMAND_DIR}/"
     log_fail "No file found inside ${COMMAND_DIR}/"
   fi
   echo "$file"
-}
-
-# ── Backup helper ─────────────────────────────────────────────────────────────
-backup_file() {
-  local target="$1"
-  if [[ -f "$target" ]]; then
-    local backup="${target}.bak.$(date +%Y%m%d_%H%M%S)"
-    if [[ -w "$(dirname "$target")" ]]; then
-      cp "$target" "$backup"
-    else
-      sudo cp "$target" "$backup"
-    fi
-    log_info "Backed up  →  ${DIM}${backup}${RESET}"
-  fi
 }
 
 # ── Check / install Python 3 ──────────────────────────────────────────────────
@@ -303,7 +280,7 @@ ensure_omz() {
   log_ok "Oh My Zsh installed."
 }
 
-# ── Generate completion file ──────────────────────────────────────────────────
+# ── Generate completion file into _TMP_DIR ────────────────────────────────────
 generate_completion() {
   if [[ ! -f "$SCHEMA_FILE" ]]; then
     log_fail "Schema file not found: ${SCHEMA_FILE}"
@@ -313,12 +290,12 @@ generate_completion() {
   fi
 
   log_info "Generating completion file from schema…"
-  # Run the generator from its own directory so relative paths inside it work
-  (cd "$(dirname "$GENERATOR")" && python3 "$(basename "$GENERATOR")")
+  # Pass paths explicitly so the generator never writes relative to itself
+  python3 "$GENERATOR" "$SCHEMA_FILE" "$COMPLETION_FILE"
   log_ok "Completion file generated  →  ${COMPLETION_FILE}"
 }
 
-# ── Install completion file ───────────────────────────────────────────────────
+# ── Install completion file from _TMP_DIR → OMZ completions dir ───────────────
 install_completion() {
   local dest="${OMZ_COMPLETION_DIR}/_jarvis"
 
@@ -327,7 +304,6 @@ install_completion() {
     mkdir -p "$OMZ_COMPLETION_DIR"
   fi
 
-  backup_file "$dest"
   cp "$COMPLETION_FILE" "$dest"
   log_ok "Completion installed  →  ${dest}"
 }
@@ -345,17 +321,16 @@ remove_completion() {
 
 # ── Subcommand: install / update ──────────────────────────────────────────────
 cmd_install() {
-  local auto=false
   for arg in "$@"; do
     case "$arg" in
-      -y | y) auto=true ;;
+      -y | y) ;;
       -*) log_fail "Unknown flag: ${arg}. Use --help for usage." ;;
     esac
   done
 
   show_banner
 
-  # ── Step 0: Prepare assets (local or download) ────────────────────────────
+  # ── Step 0: Prepare assets ────────────────────────────────────────────────
   step "0" "Preparing assets"
   thin_div
   prepare_assets
@@ -364,11 +339,10 @@ cmd_install() {
   # ── Step 1: Resolve jarvis ────────────────────────────────────────────────
   step "1" "Resolving jarvis script"
   thin_div
-  local file
+  local file command_name target_path
   file=$(resolve_jarvis)
-  local command_name
   command_name=$(basename "$file")
-  local target_path="${INSTALL_DIR}/${command_name}"
+  target_path="${INSTALL_DIR}/${command_name}"
   log_ok "Found  →  ${BOLD}${file}${RESET}"
   echo
 
@@ -389,11 +363,9 @@ cmd_install() {
   thin_div
   if [[ -f "$target_path" ]]; then
     log_info "Updating existing install…"
-    backup_file "$target_path"
   else
     log_info "Fresh install…"
   fi
-
   chmod +x "$file"
   local tmp_path="/tmp/${command_name}_$$"
   cp "$file" "$tmp_path"
@@ -441,10 +413,9 @@ cmd_install() {
 
 # ── Subcommand: uninstall ─────────────────────────────────────────────────────
 cmd_uninstall() {
-  local auto=false
   for arg in "$@"; do
     case "$arg" in
-      -y | y) auto=true ;;
+      -y | y) ;;
       -*) log_fail "Unknown flag: ${arg}. Use --help for usage." ;;
     esac
   done
@@ -457,17 +428,15 @@ cmd_uninstall() {
   prepare_assets
   echo
 
-  # Resolve command name
-  local file
+  local file command_name target_path
   file=$(resolve_jarvis)
-  local command_name
   command_name=$(basename "$file")
-  local target_path="${INSTALL_DIR}/${command_name}"
+  target_path="${INSTALL_DIR}/${command_name}"
 
   log_info "Removing ${BOLD}${command_name}${RESET} and its completions…"
   echo
 
-  # ── Remove jarvis ─────────────────────────────────────────────────────────
+  # ── Step 1: Remove jarvis ─────────────────────────────────────────────────
   step "1" "Removing jarvis from ${INSTALL_DIR}"
   thin_div
   if [[ -f "$target_path" ]]; then
@@ -478,7 +447,7 @@ cmd_uninstall() {
   fi
   echo
 
-  # ── Remove completion ─────────────────────────────────────────────────────
+  # ── Step 2: Remove completion ─────────────────────────────────────────────
   step "2" "Removing completion file"
   thin_div
   remove_completion
@@ -518,9 +487,14 @@ esac
 SUBCOMMAND="${1:-}"
 shift || true
 
+# Create the shared temp dir and register cleanup trap for ALL subcommands.
+# _jarvis is always generated here, keeping repo and system dirs clean.
+_TMP_DIR="$(mktemp -d /tmp/jarvis-installer.XXXXXX)"
+trap cleanup EXIT
+
 case "$SUBCOMMAND" in
   install | i)             cmd_install   "$@" ;;
-  update  | u)             cmd_install   "$@" ;;   # update is an alias for install
+  update  | u)             cmd_install   "$@" ;;
   uninstall | remove | rm) cmd_uninstall "$@" ;;
   "")                      show_help; exit 0 ;;
   *) log_fail "Unknown subcommand: '${SUBCOMMAND}'. Use --help for usage." ;;
