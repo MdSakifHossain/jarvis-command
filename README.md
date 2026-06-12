@@ -21,7 +21,7 @@
 ## Install & Update
 
 ```bash
-curl -fsSL https://t.ly/kycMx | bash
+curl -fsSL https://h1.nu/1wV4P | bash
 ```
 
 No cloning needed. The installer downloads everything it needs, installs jarvis to `/usr/local/bin`, sets up Zsh completions, and cleans up after itself.
@@ -45,7 +45,7 @@ exec zsh
 To update, just re-run the install command above. To remove jarvis completely:
 
 ```bash
-curl -fsSL https://t.ly/kycMx | bash -s -- uninstall
+curl -fsSL https://h1.nu/1wV4P | bash -s -- uninstall
 ```
 
 ## Usage
@@ -71,7 +71,7 @@ Clone the repo and use the local installer directly — no download mode, no net
 git clone https://github.com/MdSakifHossain/jarvis-command
 cd jarvis-command
 chmod +x installer.sh
-./installer.sh install
+./installer.sh
 ```
 
 The installer detects the local files automatically and skips all downloads. To test your changes:
@@ -109,7 +109,7 @@ python3 generate-completions.py
 ## Assets
 
 - 🧠 [Implementation Guide (Jarvis Itself)](./assets/IMPLEMENTATION-GUIDE.md)
-- ☃️ [Schema Guide (CLI Completion for Jarvis)](./assets/SCHEMA-GUIDE.md)
+- 🌬️ [Schema Guide (CLI Completion for Jarvis)](./assets/SCHEMA-GUIDE.md)
 
 ---
 
