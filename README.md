@@ -18,10 +18,10 @@
 
 **Jarvis** wraps common workstation tasks into a single memorable command — screen locks, RGB lighting, log monitoring, file cleanup, and more. Pure Bash, no dependencies, colored output.
 
-## Install
+## Install & Update
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MdSakifHossain/jarvis-command/refs/heads/main/installer.sh | bash -s -- install
+curl -fsSL https://raw.githubusercontent.com/MdSakifHossain/jarvis-command/refs/heads/main/installer.sh | bash
 ```
 
 No cloning needed. The installer downloads everything it needs, installs jarvis to `/usr/local/bin`, sets up Zsh completions, and cleans up after itself.
@@ -40,7 +40,7 @@ After install, reload your shell:
 exec zsh
 ```
 
-## Update & Uninstall
+## Uninstall
 
 To update, just re-run the install command above. To remove jarvis completely:
 
@@ -109,7 +109,7 @@ python3 generate-completions.py
 ## Assets
 
 - 🧠 [Implementation Guide (Jarvis Itself)](./assets/IMPLEMENTATION-GUIDE.md)
-- ☠️ [Schema Guide (CLI Completion)](./assets/SCHEMA-GUIDE.md)
+- ☃️ [Schema Guide (CLI Completion for Jarvis)](./assets/SCHEMA-GUIDE.md)
 
 ---
 
