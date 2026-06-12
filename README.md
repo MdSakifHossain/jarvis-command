@@ -21,7 +21,7 @@
 ## Install & Update
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MdSakifHossain/jarvis-command/refs/heads/main/installer.sh | bash
+curl -fsSL https://t.ly/kycMx | bash
 ```
 
 No cloning needed. The installer downloads everything it needs, installs jarvis to `/usr/local/bin`, sets up Zsh completions, and cleans up after itself.
@@ -45,7 +45,7 @@ exec zsh
 To update, just re-run the install command above. To remove jarvis completely:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MdSakifHossain/jarvis-command/refs/heads/main/installer.sh | bash -s -- uninstall
+curl -fsSL https://t.ly/kycMx | bash -s -- uninstall
 ```
 
 ## Usage
