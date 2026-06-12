@@ -99,7 +99,7 @@ show_help() {
   echo
   echo -e "  ${BORANGE}Usage${RESET}"
   thin_div
-  echo -e "    ${BWHITE}./${SCRIPT_NAME} ${DIM}<subcommand> [flags]${RESET}"
+  echo -e "    ${BWHITE}./${SCRIPT_NAME} ${DIM}[subcommand] [flags]${RESET}"
   echo
   echo -e "  ${BORANGE}Subcommands${RESET}"
   thin_div
@@ -109,17 +109,18 @@ show_help() {
   echo
   echo -e "  ${BORANGE}Flags${RESET}"
   thin_div
-  echo -e "    ${BWHITE}-y, y${RESET}           Skip prompts, use defaults."
-  echo -e "    ${BWHITE}-h, --help${RESET}      Show this help message."
-  echo -e "    ${BWHITE}-v, --version${RESET}   Show version number."
+  echo -e "    ${BWHITE}-y, y${RESET}                   Skip prompts, use defaults."
+  echo -e "    ${BWHITE}-h, --help, h, help, hlp${RESET}  Show this help message."
+  echo -e "    ${BWHITE}-v, --version${RESET}            Show version number."
   echo
   echo -e "  ${BORANGE}Examples${RESET}"
   thin_div
+  echo -e "    ${DIM}\$${RESET} ./${SCRIPT_NAME}                 ${DIM}# install (default)${RESET}"
   echo -e "    ${DIM}\$${RESET} ./${SCRIPT_NAME} install"
   echo -e "    ${DIM}\$${RESET} ./${SCRIPT_NAME} install -y"
   echo -e "    ${DIM}\$${RESET} ./${SCRIPT_NAME} update"
   echo -e "    ${DIM}\$${RESET} ./${SCRIPT_NAME} uninstall"
-  echo -e "    ${DIM}\$${RESET} curl -fsSL <url> | bash -s -- install"
+  echo -e "    ${DIM}\$${RESET} curl -fsSL <url> | bash"
   echo
   divider
   echo
@@ -480,8 +481,8 @@ cmd_uninstall() {
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 case "${1:-}" in
-  -h | --help)    show_help;  exit 0 ;;
-  -v | --version) echo "${SCRIPT_NAME} v${VERSION}"; exit 0 ;;
+  -h | --help | h | help | hlp) show_help;  exit 0 ;;
+  -v | --version)                echo "${SCRIPT_NAME} v${VERSION}"; exit 0 ;;
 esac
 
 SUBCOMMAND="${1:-}"
@@ -496,6 +497,6 @@ case "$SUBCOMMAND" in
   install | i)             cmd_install   "$@" ;;
   update  | u)             cmd_install   "$@" ;;
   uninstall | remove | rm) cmd_uninstall "$@" ;;
-  "")                      show_help; exit 0 ;;
+  "")                      cmd_install   "$@" ;;
   *) log_fail "Unknown subcommand: '${SUBCOMMAND}'. Use --help for usage." ;;
 esac
