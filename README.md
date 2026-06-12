@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./Banner.png" alt="Jarvis" width="100%" />
+  <img src="./assets/Banner.png" alt="Jarvis" width="100%" />
 </p>
 
 <h1 align="center">Jarvis</h1>
@@ -105,6 +105,11 @@ Edit `jarvis-schema.json`, then re-run the installer to regenerate and reinstall
 ```bash
 python3 generate-completions.py
 ```
+
+## Assets
+
+- 🧠 [Implementation Guide (Jarvis Itself)](./assets/IMPLEMENTATION-GUIDE.md)
+- ☠️ [Schema Guide (CLI Completion)](./assets/SCHEMA-GUIDE.md)
 
 ---
 
