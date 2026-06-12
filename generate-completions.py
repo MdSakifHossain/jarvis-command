@@ -6,10 +6,11 @@ Reads jarvis-schema.json and generates a Zsh completion file (_jarvis).
 Both files are expected to be in the same directory as this script.
 
 Usage:
-    python3 generate-completions.py
+    python3 generate-completions.py                        # standalone: reads/writes next to this script
+    python3 generate-completions.py <schema> <output>      # explicit paths (used by installer)
 
 Output:
-    _jarvis  (written next to this script)
+    _jarvis  (written next to this script, or to <output> if specified)
 
 Requirements:
     Python 3.6+  ·  No external dependencies
@@ -21,9 +22,12 @@ import os
 from datetime import datetime, timezone
 
 # ── Path resolution ────────────────────────────────────────────────────────────
+# Accepts optional CLI args for installer use:
+#   python3 generate-completions.py [schema_path] [output_path]
+# Falls back to sibling-file defaults when run standalone.
 SCRIPT_DIR  = os.path.dirname(os.path.realpath(__file__))
-SCHEMA_FILE = os.path.join(SCRIPT_DIR, "jarvis-schema.json")
-OUTPUT_FILE = os.path.join(SCRIPT_DIR, "_jarvis")
+SCHEMA_FILE = sys.argv[1] if len(sys.argv) > 1 else os.path.join(SCRIPT_DIR, "jarvis-schema.json")
+OUTPUT_FILE = sys.argv[2] if len(sys.argv) > 2 else os.path.join(SCRIPT_DIR, "_jarvis")
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
