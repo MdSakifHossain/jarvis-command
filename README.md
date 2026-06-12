@@ -18,36 +18,34 @@
 
 **Jarvis** wraps common workstation tasks into a single memorable command — screen locks, RGB lighting, log monitoring, file cleanup, and more. Pure Bash, no dependencies, colored output.
 
-Built as a learning project for custom system command structure, installation, and distribution.
-
-## Installation
-
-### Prerequisites
-
-- Ubuntu with `bash` 4.0+
-- `sudo` access (for `/usr/local/bin`)
-- Optional: `openrgb` for lighting, GNOME for screen lock features
-
-### Quick Install
+## Install
 
 ```bash
-git clone https://github.com/MdSakifHossain/jarvis-command
-cd jarvis-command
-chmod +x installer.sh
-./installer.sh install
+curl -fsSL https://raw.githubusercontent.com/MdSakifHossain/jarvis-command/refs/heads/main/installer.sh | bash -s -- install
 ```
 
-### Update / Uninstall
+No cloning needed. The installer downloads everything it needs, installs jarvis to `/usr/local/bin`, sets up Zsh completions, and cleans up after itself.
 
-```bash
-./installer.sh update      # Re-install after changes
-./installer.sh uninstall   # Remove completely
-```
+**Prerequisites:**
 
-After install or update, reload your shell:
+- Linux with `bash` 4.0+
+- `sudo` access
+- `python3` (for completions generation)
+- Oh My Zsh (installer will offer to install it if missing)
+- Optional: `openrgb` for lighting features, GNOME for screen lock features
+
+After install, reload your shell:
 
 ```bash
 exec zsh
+```
+
+## Update & Uninstall
+
+To update, just re-run the install command above. To remove jarvis completely:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MdSakifHossain/jarvis-command/refs/heads/main/installer.sh | bash -s -- uninstall
 ```
 
 ## Usage
@@ -56,24 +54,59 @@ exec zsh
 jarvis [command] [options]
 ```
 
-Discover all commands and flags:
+Explore all commands and flags:
 
 ```bash
 jarvis --help
 jarvis <command> --help
 ```
 
-## Important Notes
+---
 
-- The installer writes to `/usr/local/bin` and requires `sudo`
-- The `command/` directory should contain **one file** for predictable behavior
-- Test locally before installing: `./command/jarvis --help`
+## Development
 
-## Compatibility
+Clone the repo and use the local installer directly — no download mode, no network required.
 
-- **OS:** Linux distributions
-- **Shell:** `bash`, `zsh`
-- **Desktop:** GNOME (for screen lock/unlock features)
+```bash
+git clone https://github.com/MdSakifHossain/jarvis-command
+cd jarvis-command
+chmod +x installer.sh
+./installer.sh install
+```
+
+The installer detects the local files automatically and skips all downloads. To test your changes:
+
+```bash
+./installer.sh update      # re-install from local files
+./installer.sh uninstall   # clean slate
+```
+
+Test the command without installing:
+
+```bash
+./command/jarvis --help
+```
+
+### Repo structure
+
+```
+jarvis-command/
+├── installer.sh              # single installer, handles both local and online modes
+├── command/
+│   └── jarvis                # the main command script
+├── jarvis-schema.json        # completion schema — edit this to add/change commands
+└── generate-completions.py   # generates _jarvis Zsh completion from the schema
+```
+
+### Updating completions
+
+Edit `jarvis-schema.json`, then re-run the installer to regenerate and reinstall the completion file. Or generate it manually:
+
+```bash
+python3 generate-completions.py
+```
+
+---
 
 ## License
 
