@@ -30,14 +30,14 @@ OUTPUT_FILE = os.path.join(SCRIPT_DIR, "_jarvis")
 
 def load_schema(path):
     if not os.path.isfile(path):
-        print("[ERROR] Schema file not found: " + path, file=sys.stderr)
+        print("  [ERROR] Schema file not found: " + path, file=sys.stderr)
         print("        Make sure jarvis-schema.json is in the same directory as this script.", file=sys.stderr)
         sys.exit(1)
     try:
         with open(path, "r", encoding="utf-8") as fh:
             return json.load(fh)
     except json.JSONDecodeError as exc:
-        print("[ERROR] Failed to parse {}: {}".format(path, exc), file=sys.stderr)
+        print("  [ERROR] Failed to parse {}: {}".format(path, exc), file=sys.stderr)
         sys.exit(1)
 
 
@@ -240,17 +240,17 @@ def generate(schema):
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 def main():
-    print("[INFO] Reading schema  : " + SCHEMA_FILE)
+    print("  [INFO] Reading schema  : " + SCHEMA_FILE)
     schema = load_schema(SCHEMA_FILE)
 
-    print("[INFO] Generating      : " + OUTPUT_FILE)
+    print("  [INFO] Generating      : " + OUTPUT_FILE)
     content = generate(schema)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as fh:
         fh.write(content)
 
-    print("[OK]   Written         : " + OUTPUT_FILE)
-    print("[OK]   Done.")
+    print("  [OK]   Written         : " + OUTPUT_FILE)
+    print("  [OK]   Done.")
 
 
 if __name__ == "__main__":
