@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$DIR/src/core/header.sh"
+source "$DIR/src/core/globals.sh"
+source "$DIR/src/core/helpers.sh"
+
+for file in "$DIR"/src/cmd/*.sh; do
+    source "$file"
+done
+
+source "$DIR/src/core/main.sh"
+
+main "$@"
