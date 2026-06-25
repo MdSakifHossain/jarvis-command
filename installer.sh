@@ -198,13 +198,13 @@ case "${1:-}" in
     echo "installer.sh v${VERSION}"
     exit 0
     ;;
-  install | i | update | u | "")
-    shift || true
-    cmd_install "$@"
-    ;;
-  uninstall | remove | rm)
-    shift
-    cmd_uninstall "$@"
-    ;;
-  *) fail "Unknown subcommand: '${1}'. Use --help" ;;
+esac
+
+SUBCOMMAND="${1:-}"
+shift || true
+
+case "$SUBCOMMAND" in
+  install | i | update | u | "") cmd_install "$@" ;;
+  uninstall | remove | rm) cmd_uninstall "$@" ;;
+  *) fail "Unknown subcommand: '${SUBCOMMAND}'. Use --help" ;;
 esac
