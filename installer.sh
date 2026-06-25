@@ -38,8 +38,9 @@ mkdir -p "$TMP_DIR"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 # ── Banner ────────────────────────────────────────────────────────────────────
-banner() {
+install_banner() {
   clear
+  echo
   echo
   echo -e "${BORANGE}  ██╗███╗  ██╗███████╗████████╗ █████╗ ██╗     ██╗     ${R}"
   echo -e "${BORANGE}  ██║████╗ ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     ${R}"
@@ -47,6 +48,21 @@ banner() {
   echo -e "${ORANGE}  ██║██║╚████║╚════██║   ██║   ██╔══██║██║     ██║     ${R}"
   echo -e "${ORANGE}  ██║██║ ╚███║███████║   ██║   ██║  ██║███████╗███████╗${R}"
   echo -e "${DIM_ORANGE}  ╚═╝╚═╝  ╚══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝${R}"
+  echo
+  echo -e "  ${DIM}v${VERSION} · Pure Bash · No dependencies${R}"
+  echo
+}
+
+uninstall_banner() {
+  clear
+  echo
+  echo
+  echo -e "${BORANGE}  ██████╗ ███████╗███╗   ███╗ ██████╗ ██╗   ██╗███████╗${R}"
+  echo -e "${BORANGE}  ██╔══██╗██╔════╝████╗ ████║██╔═══██╗██║   ██║██╔════╝${R}"
+  echo -e "${BORANGE}  ██████╔╝█████╗  ██╔████╔██║██║   ██║██║   ██║█████╗  ${R}"
+  echo -e "${ORANGE}  ██╔══██╗██╔══╝  ██║╚██╔╝██║██║   ██║╚██╗ ██╔╝██╔══╝  ${R}"
+  echo -e "${ORANGE}  ██║  ██║███████╗██║ ╚═╝ ██║╚██████╔╝ ╚████╔╝ ███████╗${R}"
+  echo -e "${DIM_ORANGE}  ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝   ╚═══╝  ╚══════╝${R}"
   echo
   echo -e "  ${DIM}v${VERSION} · Pure Bash · No dependencies${R}"
   echo
@@ -118,7 +134,7 @@ ensure_omz() {
 # ── Install / update ──────────────────────────────────────────────────────────
 cmd_install() {
   [[ "${1:-}" == -* && "${1:-}" != "-y" ]] && fail "Unknown flag: ${1}. Use --help"
-  banner
+  install_banner
   prepare_assets
 
   local file
@@ -157,7 +173,7 @@ cmd_install() {
 
 # ── Uninstall ─────────────────────────────────────────────────────────────────
 cmd_uninstall() {
-  banner
+  uninstall_banner
   prepare_assets
 
   local file
