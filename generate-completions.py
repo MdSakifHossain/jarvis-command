@@ -244,17 +244,17 @@ def generate(schema):
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 def main():
-    print("  [INFO] Reading schema  : " + SCHEMA_FILE)
+    print("  Reading schema  : " + SCHEMA_FILE)
     schema = load_schema(SCHEMA_FILE)
 
-    print("  [INFO] Generating      : " + OUTPUT_FILE)
+    print("  Generating      : " + OUTPUT_FILE)
     content = generate(schema)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as fh:
         fh.write(content)
 
-    print("  [OK]   Written         : " + OUTPUT_FILE)
-    print("  [OK]   Done.")
+    print("  Written         : " + OUTPUT_FILE)
+    print("  Done.")
 
 
 if __name__ == "__main__":
