@@ -16,8 +16,8 @@ BORANGE='\033[1;38;5;209m'
 DIM_ORANGE='\033[2;38;5;209m'
 
 # ── Logging ───────────────────────────────────────────────────────────────────
-info() { echo -e "  ${ORANGE}·${R}  $*"; }
-ok() { echo -e "  ${BORANGE}✔${R}  $*"; }
+info() { echo -e "  ${ORANGE}⦿${R}  $*"; }
+ok() { echo -e "  ${BORANGE}🟅${R}  $*"; }
 fail() {
   echo -e "  ${BORANGE}✖${R}  $*" >&2
   exit 1
@@ -31,6 +31,11 @@ ask() {
 # ── Termux detection ──────────────────────────────────────────────────────────
 is_termux() { [[ -n "${TERMUX_VERSION:-}" || "${PREFIX:-}" == *"com.termux"* ]]; }
 INSTALL_DIR="$(is_termux && echo "${PREFIX}/bin" || echo "/usr/local/bin")"
+
+# ── Temp dir (PWD-based, works on Termux and Linux, cleaned up on exit) ───────
+TMP_DIR="$(pwd)/.jarvis-tmp"
+mkdir -p "$TMP_DIR"
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 # ── Banner ────────────────────────────────────────────────────────────────────
 banner() {
@@ -58,33 +63,35 @@ fetch() {
 }
 
 # ── Asset preparation ─────────────────────────────────────────────────────────
-# Sets CMD_DIR, SCHEMA, GEN (linux only). TMP_DIR cleaned up on exit.
-TMP_DIR=""
+# Local mode  : uses files sitting next to installer.sh, nothing downloaded.
+# Online mode : downloads everything into TMP_DIR.
+# Either way  : TMP_DIR is always cleaned up on exit via the trap above.
 CMD_DIR=""
 SCHEMA=""
 GEN=""
 prepare_assets() {
-  local ldir="${SCRIPT_DIR}/command" lschema="${SCRIPT_DIR}/jarvis-schema.json" lgen="${SCRIPT_DIR}/generate-completions.py"
+  local ldir="${SCRIPT_DIR}/command"
+  local lschema="${SCRIPT_DIR}/jarvis-schema.json"
+  local lgen="${SCRIPT_DIR}/generate-completions.py"
+
   if [[ -d "$ldir" && -f "$lschema" && -f "$lgen" ]]; then
     info "Local assets detected, skipping download"
     CMD_DIR="$ldir"
     SCHEMA="$lschema"
     GEN="$lgen"
-    return
+  else
+    mkdir -p "${TMP_DIR}/command"
+    info "Downloading jarvis…"
+    fetch "${GITHUB_RAW}/command/jarvis" "${TMP_DIR}/command/jarvis"
+    if ! is_termux; then
+      info "Downloading schema and generator…"
+      fetch "${GITHUB_RAW}/jarvis-schema.json" "${TMP_DIR}/jarvis-schema.json"
+      fetch "${GITHUB_RAW}/generate-completions.py" "${TMP_DIR}/generate-completions.py"
+      SCHEMA="${TMP_DIR}/jarvis-schema.json"
+      GEN="${TMP_DIR}/generate-completions.py"
+    fi
+    CMD_DIR="${TMP_DIR}/command"
   fi
-  TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/jarvis.XXXXXX")"
-  trap '[[ -d "$TMP_DIR" ]] && rm -rf "$TMP_DIR"' EXIT
-  mkdir -p "${TMP_DIR}/command"
-  info "Downloading jarvis…"
-  fetch "${GITHUB_RAW}/command/jarvis" "${TMP_DIR}/command/jarvis"
-  if ! is_termux; then
-    info "Downloading schema and generator…"
-    fetch "${GITHUB_RAW}/jarvis-schema.json" "${TMP_DIR}/jarvis-schema.json"
-    fetch "${GITHUB_RAW}/generate-completions.py" "${TMP_DIR}/generate-completions.py"
-    SCHEMA="${TMP_DIR}/jarvis-schema.json"
-    GEN="${TMP_DIR}/generate-completions.py"
-  fi
-  CMD_DIR="${TMP_DIR}/command"
 }
 
 # ── Helpers: python3, omz ─────────────────────────────────────────────────────
@@ -130,19 +137,18 @@ cmd_install() {
     ensure_python
     ensure_omz
 
-    local tmp="${TMPDIR:-/tmp}/${name}_$$"
-    cp "$file" "$tmp"
-    sudo mv "$tmp" "${INSTALL_DIR}/${name}"
+    # Stage binary through TMP_DIR so sudo mv is atomic
+    cp "$file" "${TMP_DIR}/${name}"
+    sudo mv "${TMP_DIR}/${name}" "${INSTALL_DIR}/${name}"
     sudo chmod +x "${INSTALL_DIR}/${name}"
     ok "Installed → ${INSTALL_DIR}/${name}"
 
+    # Generate completion into TMP_DIR — trap will delete it after cp
     info "Generating completions…"
-    local comp="${TMP_DIR:-${SCRIPT_DIR}}/_jarvis"
-    python3 "$GEN" "$SCHEMA" "$comp"
+    python3 "$GEN" "$SCHEMA" "${TMP_DIR}/_jarvis"
     mkdir -p "${OMZ_DIR}/completions"
-    cp "$comp" "${OMZ_DIR}/completions/_jarvis"
+    cp "${TMP_DIR}/_jarvis" "${OMZ_DIR}/completions/_jarvis"
     ok "Completions → ${OMZ_DIR}/completions/_jarvis"
-
     echo
     info "Reload your shell to activate completions:  exec zsh"
   fi
@@ -175,17 +181,17 @@ cmd_uninstall() {
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 show_help() {
-  echo
-  echo -e "  ${BORANGE}installer.sh${R} ${DIM}v${VERSION}${R}"
-  echo
-  echo -e "  Usage:  ./installer.sh [install|update|uninstall] [-y]"
-  echo
-  echo -e "  ${ORANGE}install, i, update, u${R}  Install / re-install jarvis"
-  echo -e "  ${ORANGE}uninstall, rm${R}          Remove jarvis and completions"
-  echo -e "  ${ORANGE}-y${R}                     Skip prompts"
-  echo -e "  ${ORANGE}-h, --help${R}             This message"
-  echo -e "  ${ORANGE}-v, --version${R}          Print version"
-  echo
+  echo -e "
+  ${BORANGE}installer.sh${R} ${DIM}v${VERSION}${R}
+
+  Usage:  ./installer.sh [install|update|uninstall] [-y]
+  
+  ${ORANGE}install, i, update, u${R}  Install / re-install jarvis
+  ${ORANGE}uninstall, rm${R}          Remove jarvis and completions
+  ${ORANGE}-y${R}                     Skip prompts
+  ${ORANGE}-h, --help${R}             This message
+  ${ORANGE}-v, --version${R}          Print version
+  "
 }
 
 # ── Entry point ───────────────────────────────────────────────────────────────
