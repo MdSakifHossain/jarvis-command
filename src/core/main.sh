@@ -52,6 +52,10 @@ main() {
             cmd_bkash "$@"
             exit 0
             ;;
+        self)
+            cmd_self "$@"
+            exit 0
+            ;;
         *)
             show_help
             exit 0

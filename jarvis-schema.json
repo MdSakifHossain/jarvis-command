@@ -206,6 +206,29 @@
     {
       "name": "help",
       "description": "Show help"
+    },
+
+    {
+      "name": "self",
+      "description": "Manage jarvis itself",
+      "subcommands": [
+        {
+          "name": "update",
+          "description": "Pull and apply the latest version from the repository"
+        },
+        {
+          "name": "uninstall",
+          "description": "Remove jarvis and its shell completions from the system"
+        },
+        {
+          "name": "source",
+          "description": "Clone the source repository into the current directory"
+        },
+        {
+          "name": "info",
+          "description": "Show install path, version, shell, and completion status"
+        }
+      ]
     }
   ]
 }
